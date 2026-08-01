@@ -44,9 +44,16 @@ def predict(data: ModelInput):
     
     input_df = pd.DataFrame([data.model_dump()])
     
-
+   
     input_df['condition_missing'] = 0
-
+    
+  
+    input_df['cylinders'] = input_df['cylinders'].astype(str).str.extract(r'(\d+)').astype(float)
+    
+  
+    input_df['cylinders'] = input_df['cylinders'].fillna(6.0)
+    
+    
     processed_data = pipeline.transform(input_df)
     
     prediction = model.predict(processed_data)
