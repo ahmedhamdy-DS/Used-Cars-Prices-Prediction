@@ -44,25 +44,25 @@ def predict(data: ModelInput):
     
     input_df = pd.DataFrame([data.model_dump()])
     
-   
+
     input_df['condition_missing'] = 0
     
     
     input_df['cylinders'] = input_df['cylinders'].astype(str).str.extract(r'(\d+)').astype(float)
     input_df['cylinders'] = input_df['cylinders'].fillna(6.0)
-    
-   
+  
     processed_data = pipeline.transform(input_df)
     
-    
-    if isinstance(processed_data, pd.DataFrame):
-        for col in processed_data.select_dtypes(include=['object', 'string']).columns:
-            processed_data[col] = processed_data[col].astype('category')
-    else:
-        
+ 
+    if not isinstance(processed_data, pd.DataFrame):
         processed_data = pd.DataFrame(processed_data)
-        for col in processed_data.select_dtypes(include=['object', 'string']).columns:
-            processed_data[col] = processed_data[col].astype('category')
+    
+ 
+    processed_data.columns = processed_data.columns.astype(str)
+    
+ 
+    for col in processed_data.select_dtypes(include=['object', 'string']).columns:
+        processed_data[col] = processed_data[col].astype(str).astype('category')
             
 
     prediction = model.predict(processed_data)
