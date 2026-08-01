@@ -41,8 +41,12 @@ class ModelInput(BaseModel):
 
 @app.post("/predict")
 def predict(data: ModelInput):
+    
     input_df = pd.DataFrame([data.model_dump()])
     
+
+    input_df['condition_missing'] = 0
+
     processed_data = pipeline.transform(input_df)
     
     prediction = model.predict(processed_data)
