@@ -258,8 +258,17 @@ def predict(car: CarFeatures):
     try:
         features_df = build_feature_dataframe(car)
         transformed = preprocessing_pipeline.transform(features_df)
-        predicted_price = float(model.predict(transformed)[0])
-        predicted_price = max(predicted_price, 0.0)
+        raw_prediction = float(model.predict(transformed)[0])
+
+      
+        print("DEBUG region_encoded:", REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE))
+        print("DEBUG model_encoded:", MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE))
+        print("DEBUG global_mean:", GLOBAL_MEAN_PRICE)
+        print("DEBUG features_df:\n", features_df.to_dict(orient="records"))
+        print("DEBUG raw_prediction (before clamp):", raw_prediction)
+        # -----------------------------------------------------------
+
+        predicted_price = max(raw_prediction, 0.0)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Prediction failed: {exc}") from exc
 
