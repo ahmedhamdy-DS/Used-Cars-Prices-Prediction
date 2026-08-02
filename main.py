@@ -258,3 +258,4 @@ def predict(car: CarFeatures):
         confidence_high=high,
         factors=factors,
     )
+
