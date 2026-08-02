@@ -23,7 +23,7 @@ const EMPTY_FORM = {
   state: "",
 };
 
-
+// Fields split across 3 steps
 const STEPS = [
   {
     title: "Vehicle",
