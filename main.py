@@ -155,7 +155,7 @@ def extract_cylinders(raw: str) -> float:
 
 
 def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
-    
+
     clean_region = car.region.strip().lower()
     clean_model = car.model.strip().lower()
 
