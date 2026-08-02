@@ -155,15 +155,14 @@ def extract_cylinders(raw: str) -> float:
 
 
 def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
-    """Builds a single-row DataFrame with exactly the columns/dtypes/order
-    the ColumnTransformer was fit on.
+    
+    clean_region = car.region.strip().lower()
+    clean_model = car.model.strip().lower()
 
-    NOTE: 'manufacturer' and 'state' are accepted from the client for a
-    better UX (manufacturer drives the cascading Model dropdown on the
-    frontend) but were never part of the training feature set — the
-    notebook's `cols_order` for the ColumnTransformer never included them.
-    They are intentionally not used below.
-    """
+
+    region_val = next((v for k, v in REGION_MAP.items() if str(k).strip().lower() == clean_region), GLOBAL_MEAN_PRICE)
+    model_val = next((v for k, v in MODEL_MAP.items() if str(k).strip().lower() == clean_model), GLOBAL_MEAN_PRICE)
+
     row = {
         "year": float(car.year),
         "cylinders": extract_cylinders(car.cylinders),
@@ -175,24 +174,13 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
         "drive": car.drive,
         "type": car.type,
         "paint_color": car.paint_color,
-        # The form always supplies a condition, so this flag is always 0 at inference time
-        # (it only ever became 1 in training for rows where 'condition' was missing from the raw dataset).
         "condition_missing": 0.0,
-        # Target-encode high-cardinality columns using the training-set lookup tables.
-        # Unseen categories fall back to the global mean price (same behaviour as
-        # kfold_target_encode()'s .fillna(global_mean) in the notebook).
-        "region": REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE),
-        "model": MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE),
+        "region": region_val,
+        "model": model_val,
     }
 
     df = pd.DataFrame([row])
 
-    # Explicit dtype casting as requested: numeric columns -> float,
-    # object/string columns stay as plain Python strings (the pipeline's
-    # OneHotEncoder/OrdinalEncoder operate on string categories, not
-    # pandas 'category' dtype — casting to 'category' here would not
-    # change behaviour since these go through sklearn encoders, not
-    # XGBoost's native categorical handling).
     numeric_cols = ["year", "cylinders", "odometer", "condition_missing", "region", "model"]
     df[numeric_cols] = df[numeric_cols].astype(float)
 
