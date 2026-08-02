@@ -4,7 +4,7 @@
 import { useMemo, useState, FormEvent } from "react";
 import { selectOptions, modelsByManufacturer } from "./data";
 
-const API_URL = "https://used-cars-prices-prediction.onrender.com/predict";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://used-cars-prices-prediction.onrender.com/predict";
 
 const EMPTY_FORM = {
   manufacturer: "",
