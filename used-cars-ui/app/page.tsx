@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, FormEvent } from "react";
 import { selectOptions, modelsByManufacturer } from "./data";
 
 const API_URL = "https://used-cars-prices-prediction.onrender.com/predict";
@@ -59,21 +59,21 @@ const FIELD_LABELS = {
   state: "State",
 };
 
-function currency(n) {
+function currency(n: number | string) {
   const num = Number(n);
   if (!Number.isFinite(num)) return "-";
   return num.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function titleCase(s) {
+function titleCase(s: string) {
   return String(s).charAt(0).toUpperCase() + String(s).slice(1);
 }
 
 // Same "influencing factors" heuristic as main.py — used as a client-side
 // fallback if the server doesn't return `factors`, so the result card stays
 // useful either way.
-function mockFactors(form, price) {
-  const factors = [];
+function mockFactors(form: any, price: number) {
+  const factors: { label: string; impact: number }[] = [];
   const odometer = Number(form.odometer);
   const year = Number(form.year);
   const age = 2026 - year;
@@ -98,15 +98,31 @@ function mockFactors(form, price) {
   return factors.slice(0, 4);
 }
 
-function FieldError({ message }) {
+function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-1 text-xs text-red-600">{message}</p>;
 }
 
-function SelectInput({ field, value, options, onChange, error, placeholder, disabled }) {
+function SelectInput({
+  field,
+  value,
+  options,
+  onChange,
+  error,
+  placeholder,
+  disabled,
+}: {
+  field: string;
+  value: string;
+  options: string[];
+  onChange: (field: string, value: string) => void;
+  error?: string;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
   return (
     <div className="flex flex-col">
-      <label className="mb-1.5 text-sm font-medium text-slate-700">{FIELD_LABELS[field]}</label>
+      <label className="mb-1.5 text-sm font-medium text-slate-700">{(FIELD_LABELS as Record<string, string>)[field]}</label>
       <select
         value={value}
         disabled={disabled}
@@ -116,7 +132,7 @@ function SelectInput({ field, value, options, onChange, error, placeholder, disa
           ${error ? "border-red-400 focus:border-red-500" : "border-slate-300 focus:border-blue-500"}
           disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`}
       >
-        <option value="">{placeholder ?? `Select ${FIELD_LABELS[field].toLowerCase()}`}</option>
+        <option value="">{placeholder ?? `Select ${(FIELD_LABELS as Record<string, string>)[field].toLowerCase()}`}</option>
         {options.map((opt) => (
           <option key={opt} value={opt}>
             {field === "year" ? opt : titleCase(opt)}
@@ -128,10 +144,26 @@ function SelectInput({ field, value, options, onChange, error, placeholder, disa
   );
 }
 
-function NumberInput({ field, value, onChange, error, placeholder, min, max }) {
+function NumberInput({
+  field,
+  value,
+  onChange,
+  error,
+  placeholder,
+  min,
+  max,
+}: {
+  field: string;
+  value: string;
+  onChange: (field: string, value: string) => void;
+  error?: string;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
   return (
     <div className="flex flex-col">
-      <label className="mb-1.5 text-sm font-medium text-slate-700">{FIELD_LABELS[field]}</label>
+      <label className="mb-1.5 text-sm font-medium text-slate-700">{(FIELD_LABELS as Record<string, string>)[field]}</label>
       <input
         type="number"
         value={value}
@@ -151,15 +183,23 @@ function NumberInput({ field, value, onChange, error, placeholder, min, max }) {
 export default function CarPricePredictor() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [step, setStep] = useState(0);
-  const [errors, setErrors] = useState({});
-  const [result, setResult] = useState(null);
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [result, setResult] = useState<{
+    price: number;
+    low: number;
+    high: number;
+    factors: { label: string; impact: number }[];
+  } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const modelOptions = useMemo(() => modelsByManufacturer[form.manufacturer] ?? [], [form.manufacturer]);
+  const modelOptions = useMemo(
+    () => (modelsByManufacturer as Record<string, string[]>)[form.manufacturer] ?? [],
+    [form.manufacturer]
+  );
   const sortedModelOptions = useMemo(() => [...modelOptions].sort((a, b) => a.localeCompare(b)), [modelOptions]);
 
-  function updateField(field, value) {
+  function updateField(field: string, value: string) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "manufacturer") next.model = "";
@@ -168,10 +208,10 @@ export default function CarPricePredictor() {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
-  function validateStep(index) {
-    const stepErrors = {};
+  function validateStep(index: number) {
+    const stepErrors: Record<string, string> = {};
     for (const field of STEPS[index].fields) {
-      const value = form[field];
+      const value = (form as Record<string, string>)[field];
       if (value === "" || value === null || value === undefined) {
         stepErrors[field] = "This field is required";
         continue;
@@ -198,7 +238,7 @@ export default function CarPricePredictor() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!validateStep(step)) return;
 
@@ -301,8 +341,10 @@ export default function CarPricePredictor() {
                           <SelectInput
                             key={field}
                             field={field}
-                            value={form[field]}
-                            options={[...selectOptions[field]].sort((a, b) => String(a).localeCompare(String(b)))}
+                            value={(form as Record<string, string>)[field]}
+                            options={[...(selectOptions as Record<string, string[]>)[field]].sort((a, b) =>
+                              String(a).localeCompare(String(b))
+                            )}
                             onChange={updateField}
                             error={errors[field]}
                           />
