@@ -1,9 +1,8 @@
-// app/page.tsx
 "use client";
 
 import { useState } from "react";
 // هنا بنستدعي الداتا اللي حطيناها في الملف التاني
-import { selectOptions, modelsByManufacturer } from "./data"; 
+import { selectOptions, modelsByManufacturer } from "./data";
 
 export default function CarPricePredictor() {
   const [formData, setFormData] = useState({
@@ -23,14 +22,15 @@ export default function CarPricePredictor() {
     state: "",
   });
 
-  const [predictedPrice, setPredictedPrice] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // تحديد الأنواع للـ State عشان ميعترضش
+  const [predictedPrice, setPredictedPrice] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e) => {
+  // تحديد نوع الحدث (Event) لـ onChange
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
-    // لو غير الماركة، نفضي الموديل عشان ميحصلش تعارض
+
     if (name === "manufacturer") {
       setFormData({ ...formData, manufacturer: value, model: "" });
     } else {
@@ -38,7 +38,8 @@ export default function CarPricePredictor() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  // تحديد نوع الحدث لـ onSubmit 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -67,15 +68,18 @@ export default function CarPricePredictor() {
       }
 
       const data = await response.json();
-      setPredictedPrice(data.predicted_price);
-    } catch (err) {
+      const price = data.estimated_price ?? data.predicted_price;
+      setPredictedPrice(price);
+      
+    } catch (err: any) { // إضافة any هنا عشان يقدر يقرأ الـ err.message
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const fields = Object.keys(formData);
+  // تعريف إن الـ fields دي هي مفاتيح (keys) موجودة جوه الـ formData
+  const fields = Object.keys(formData) as Array<keyof typeof formData>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -92,8 +96,7 @@ export default function CarPricePredictor() {
               </label>
 
               {field === "model" ? (
-                // حقل الموديل معتمد على الماركة اللي اختارها اليوزر
-                modelsByManufacturer[formData.manufacturer] ? (
+                (modelsByManufacturer as any)[formData.manufacturer] ? (
                   <select
                     name="model"
                     value={formData.model}
@@ -102,7 +105,7 @@ export default function CarPricePredictor() {
                     className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                   >
                     <option value="" disabled>Choose model...</option>
-                    {modelsByManufacturer[formData.manufacturer].map((mod) => (
+                    {(modelsByManufacturer as any)[formData.manufacturer].map((mod: string) => (
                       <option key={mod} value={mod}>
                         {mod.charAt(0).toUpperCase() + mod.slice(1)}
                       </option>
@@ -120,10 +123,7 @@ export default function CarPricePredictor() {
                     placeholder={formData.manufacturer ? "No specific models found" : "Choose manufacturer first"}
                   />
                 )
-              ) : 
-              
-              // باقي الحقول
-              selectOptions[field] ? (
+              ) : (selectOptions as any)[field] ? (
                 <select
                   name={field}
                   value={formData[field]}
@@ -132,15 +132,15 @@ export default function CarPricePredictor() {
                   className="p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
                   <option value="" disabled>Choose {field.replace("_", " ")}...</option>
-                  {selectOptions[field].map((opt) => (
+                  {(selectOptions as any)[field].map((opt: string | number) => (
                     <option key={opt} value={opt}>
-                      {field === 'year' ? opt : String(opt).charAt(0).toUpperCase() + String(opt).slice(1)}
+                      {field === "year" ? opt : String(opt).charAt(0).toUpperCase() + String(opt).slice(1)}
                     </option>
                   ))}
                 </select>
               ) : (
                 <input
-                  type={field === "odometer" ? "number" : "text"}
+                  type={field === "odometer" || field === "year" ? "number" : "text"}
                   name={field}
                   value={formData[field]}
                   onChange={handleChange}
@@ -169,7 +169,7 @@ export default function CarPricePredictor() {
           </div>
         )}
 
-        {predictedPrice && (
+        {predictedPrice !== null && (
           <div className="mt-6 p-6 bg-green-100 text-green-800 rounded-lg text-center shadow-inner">
             <h2 className="text-2xl font-bold">Estimated Price</h2>
             <p className="text-4xl mt-2 font-extrabold text-green-700">

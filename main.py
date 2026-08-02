@@ -43,9 +43,20 @@ COLS_ORDER = NUM_COLS + ORDINAL_COLS + CATEG_COLS + PASSTHROUGH_COLS
 # -----------------------------------------------------------------
 app = FastAPI(title="Used Car Price Prediction API", version="1.0.0")
 
+# FIX: allow_origins used to be hardcoded to localhost:3000 only, which blocks
+# any frontend deployed elsewhere (Vercel/Netlify/etc). Set the ALLOWED_ORIGINS
+# env var on Render to a comma-separated list, e.g.
+#   ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend.vercel.app
+_default_origins = "http://localhost:3000"
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("ALLOWED_ORIGINS", _default_origins).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -123,6 +134,7 @@ class PredictionFactor(BaseModel):
 
 class PredictionResponse(BaseModel):
     estimated_price: float
+    predicted_price: float  # alias of estimated_price, kept for frontend compatibility
     confidence_low: float
     confidence_high: float
     factors: list[PredictionFactor]
@@ -254,6 +266,7 @@ def predict(car: CarFeatures):
 
     return PredictionResponse(
         estimated_price=round(predicted_price, 2),
+        predicted_price=round(predicted_price, 2),
         confidence_low=low,
         confidence_high=high,
         factors=factors,
