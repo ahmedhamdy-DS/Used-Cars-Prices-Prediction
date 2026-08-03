@@ -132,13 +132,23 @@ class PredictionFactor(BaseModel):
     impact: float  # signed dollar impact, mocked for display purposes
 
 
+# Cell 10 of the notebook filters training rows to price between $500 and
+# $150,000 before fitting the model — so the model never saw a real listing
+# outside that range. Any raw prediction outside it isn't a "low price",
+# it's the model extrapolating blindly on an out-of-distribution input
+# (e.g. an exotic/rare vehicle combo). Clamp to this range instead of 0,
+# and flag it so the UI can tell the person the estimate is less reliable.
+PRICE_FLOOR = 500.0
+PRICE_CEILING = 150000.0
+
+
 class PredictionResponse(BaseModel):
     estimated_price: float
     predicted_price: float  # alias of estimated_price, kept for frontend compatibility
     confidence_low: float
     confidence_high: float
     factors: list[PredictionFactor]
-    debug: dict | None = None  # TEMPORARY — remove once the $0 issue is found
+    low_confidence: bool  # True if the raw model output fell outside the training price range
 
 
 # -----------------------------------------------------------------
@@ -258,30 +268,14 @@ def predict(car: CarFeatures):
         features_df = build_feature_dataframe(car)
         transformed = preprocessing_pipeline.transform(features_df)
         raw_prediction = float(model.predict(transformed)[0])
-        predicted_price = max(raw_prediction, 0.0)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Prediction failed: {exc}") from exc
 
+    low_confidence = raw_prediction < PRICE_FLOOR or raw_prediction > PRICE_CEILING
+    predicted_price = min(max(raw_prediction, PRICE_FLOOR), PRICE_CEILING)
+
     low, high = mock_confidence_interval(predicted_price)
     factors = mock_factors(car, predicted_price)
-
-    # TEMPORARY debug block — tells us exactly what went into the model.
-    # Delete this dict (and the `debug` field on PredictionResponse above)
-    # once the $0 issue is diagnosed.
-    debug_info = {
-        "cylinders_input": car.cylinders,
-        "cylinders_extracted": extract_cylinders(car.cylinders),
-        "region_input": car.region,
-        "region_encoded": REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE),
-        "region_was_in_training_data": car.region in REGION_MAP,
-        "model_input": car.model,
-        "model_encoded": MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE),
-        "model_was_in_training_data": car.model in MODEL_MAP,
-        "raw_prediction_before_clamp": raw_prediction,
-        "transformed_feature_vector": transformed.tolist()
-        if hasattr(transformed, "tolist")
-        else str(transformed),
-    }
 
     return PredictionResponse(
         estimated_price=round(predicted_price, 2),
@@ -289,5 +283,5 @@ def predict(car: CarFeatures):
         confidence_low=low,
         confidence_high=high,
         factors=factors,
-        debug=debug_info,
+        low_confidence=low_confidence,
     )
