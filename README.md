@@ -20,17 +20,6 @@
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome" />
 </p>
 
----
-
-## Demo
-
-<p align="center">
-  <img src="./docs/demo.gif" alt="AutoValuate demo" width="800" />
-  <br/>
-  <em>Replace this with a real screenshot or screen recording of the app in action.</em>
-</p>
-
----
 
 ## Overview
 
