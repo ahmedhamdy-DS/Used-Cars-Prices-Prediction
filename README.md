@@ -1,147 +1,267 @@
-# 🚗 AutoValuate — Used Vehicle Price Predictor
+# AutoValuate — AI Car Price Estimator
 
-A full end-to-end Machine Learning project that predicts the **fair market value of used vehicles** from the Craigslist vehicles dataset, wrapped in a polished, SaaS-style **Streamlit** dashboard for interactive exploration and real-time price prediction.
+> Instant, AI-powered valuations for used vehicles — trained on real-world Craigslist listing data.
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white" />
-  <img src="https://img.shields.io/badge/scikit--learn-ML-F7931E?logo=scikitlearn&logoColor=white" />
-  <img src="https://img.shields.io/badge/XGBoost-Model-blue" />
-  <img src="https://img.shields.io/badge/LightGBM-Model-brightgreen" />
-  <img src="https://img.shields.io/badge/License-MIT-green" />
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/XGBoost-006ACC?style=for-the-badge" alt="XGBoost" />
+  <img src="https://img.shields.io/badge/Scikit--Learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-Learn" />
+  <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+  <img src="https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white" alt="Render" />
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/status-active-success?style=flat-square" alt="Status" />
+  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome" />
 </p>
 
 ---
 
-## 📌 Overview
+## Demo
 
-This project walks through the complete data science lifecycle — from raw, messy real-world data to a deployed prediction engine:
-
-1. **Exploratory Data Analysis (EDA)** — deep-dive into a large used-car listings dataset (missing values, distributions, categorical breakdowns, time-based posting features).
-2. **Data Preprocessing & Modeling** — leakage-safe cleaning pipeline, outlier removal, K-Fold target encoding, and benchmarking of multiple regression models.
-3. **Deployment** — an interactive multi-page **Streamlit** web app that loads the trained pipeline/model and returns instant price estimates for any vehicle configuration.
-
----
-
-## ✨ Features
-
-- 🏠 **Home & Data Overview** — dataset snapshot and key statistics at a glance.
-- 📊 **Market Insights (EDA)** — interactive Plotly visualizations of price trends by manufacturer, condition, mileage, and more.
-- 🤖 **Price Predictor Engine** — a clean input form (manufacturer, model, year, odometer, condition, fuel, transmission, drive, type, paint color, region, title status) that returns an instant fair-market-value estimate.
-- 🎨 **Custom dark, SaaS-style UI** — hand-crafted CSS theming (gradient backgrounds, glowing metric cards, animated buttons) instead of default Streamlit styling.
-- 🛡️ **Graceful fallbacks** — the app never crashes: it falls back to synthetic demo data if the raw dataset is missing, and clearly reports if model artifacts aren't found.
+<p align="center">
+  <img src="./docs/demo.gif" alt="AutoValuate demo" width="800" />
+  <br/>
+  <em>Replace this with a real screenshot or screen recording of the app in action.</em>
+</p>
 
 ---
 
-## 🧠 Machine Learning Pipeline
+## Overview
 
-The modeling notebook (`Datapre_modeling.ipynb`) builds a leakage-safe pipeline:
+**AutoValuate** is a full-stack machine learning application that estimates the fair market value of a used car in seconds. A user answers a short, guided form about their vehicle — make, model, condition, mileage, and location — and a trained **XGBoost** regression model, backed by a **scikit-learn** preprocessing pipeline, returns an instant price estimate along with a confidence range and the key factors driving the valuation.
 
-| Step | Technique |
+Under the hood, the model was trained on the well-known **Craigslist used vehicles dataset**, using target encoding for high-cardinality categorical features (like region and model) to keep the pipeline both accurate and production-friendly. The result is wrapped in a clean **FastAPI** REST service and a polished, modern **Next.js** interface — giving it the feel of a real SaaS product rather than a notebook demo.
+
+---
+
+## Features
+
+- **Instant AI Valuation** — get a price estimate in under a second from a trained XGBoost model.
+- **Modern SaaS UI** — a clean, multi-step form built with Next.js, React, and Tailwind CSS.
+- **Graceful Handling of Out-of-Distribution Data** — unseen regions/models gracefully fall back to sensible global averages instead of breaking the prediction.
+- **Explainability Snippets** — human-readable "factors influencing this price" alongside every estimate.
+- **Clean REST API** — a documented FastAPI backend that any frontend (web, mobile, or third-party) can consume.
+- **Production Deployment** — frontend on Vercel, backend on Render, fully decoupled and independently scalable.
+
+---
+
+## Tech Stack & Architecture
+
+| Layer | Technologies |
 |---|---|
-| Missing-value handling | Column-wise dropping for low-missing features + group-wise (manufacturer/model) mode imputation |
-| Outlier removal | IQR-based filtering on price and odometer, plus sane year/mileage bounds |
-| Categorical encoding | One-Hot Encoding (nominal), Ordinal Encoding (vehicle condition), K-Fold smoothed target encoding for high-cardinality columns |
-| Numerical scaling | `RobustScaler` |
-| Models benchmarked | Random Forest, XGBoost, LightGBM |
+| **Frontend** | Next.js · React · Tailwind CSS · TypeScript |
+| **Backend** | FastAPI · Python 3.11 · Uvicorn · Pydantic |
+| **Machine Learning** | XGBoost · Scikit-Learn (ColumnTransformer, OneHotEncoder, OrdinalEncoder, RobustScaler, FunctionTransformer) · Pandas · NumPy · Target Encoding |
+| **Deployment** | Vercel (frontend) · Render + Docker (backend) |
 
-### 📈 Model Performance (test set)
+### System architecture
 
-| Model | R² | MAE | RMSE |
-|---|---|---|---|
-| **Random Forest** | **0.90** | **$2,163** | **$3,923** |
-| XGBoost | 0.87 | $2,900 | $4,537 |
-| LightGBM | 0.86 | $3,077 | $4,742 |
+```mermaid
+flowchart LR
+    A["Next.js UI (Vercel)"] -- "POST /predict (JSON)" --> B["FastAPI Server (Render / Docker)"]
+    B -- "estimated_price, range, factors" --> A
+    B --> C["Preprocessing Pipeline (sklearn ColumnTransformer)"]
+    C --> D["Trained XGBoost Model (XGBR.json)"]
+    B --> E["Target-Encoding Lookup Tables (encoding_maps.pkl)"]
+    D -- "raw prediction" --> B
+```
 
-Random Forest delivered the strongest performance and is the model served by the app.
+### Request lifecycle (sequence)
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant F as Next.js Frontend
+    participant A as FastAPI Backend
+    participant P as Preprocessing Pipeline
+    participant M as XGBoost Model
+
+    U->>F: Fill in vehicle details (3-step form)
+    F->>A: POST /predict {region, year, model, condition, ...}
+    A->>A: Validate payload (Pydantic schema)
+    A->>A: Encode region/model via target-encoding maps
+    A->>P: transform(features_df)
+    P-->>A: Transformed feature matrix
+    A->>M: predict(transformed)
+    M-->>A: Raw predicted price
+    A->>A: Clamp to >= 0, build confidence range & factors
+    A-->>F: {estimated_price, confidence_low/high, factors}
+    F-->>U: Render valuation result
+```
+
+### ML preprocessing pipeline
+
+```mermaid
+flowchart TD
+    subgraph Input Features
+        N["Numeric: year, cylinders, odometer"]
+        O["Ordinal: condition"]
+        C["Categorical: fuel, title_status, transmission, drive, type, paint_color"]
+        T["Target-Encoded: region, model"]
+    end
+
+    N --> RS["RobustScaler"]
+    O --> OE["OrdinalEncoder"]
+    C --> OH["OneHotEncoder"]
+    T --> FT["FunctionTransformer (identity, precomputed)"]
+
+    RS --> CT["ColumnTransformer"]
+    OE --> CT
+    OH --> CT
+    FT --> CT
+
+    CT --> XGB["XGBoost Regressor"]
+    XGB --> OUT["Predicted Price"]
+```
 
 ---
 
-## 🗂️ Project Structure
+## Folder Structure
 
 ```
-.
-├── Exploratory_Data_Analysis.ipynb   # In-depth EDA: distributions, missingness, correlations
-├── Datapre_modeling.ipynb            # Cleaning, feature engineering, encoding & model training
-├── app.py                            # Streamlit dashboard (EDA viewer + live predictor)
-├── preprocessing_pipeline.pkl        # Fitted sklearn ColumnTransformer/Pipeline (generated)
-├── best_rf_model.pkl                 # Trained Random Forest model (generated)
-├── vehicles.csv                      # Raw dataset (not included — see below)
+Used-Cars-Prices-Prediction/
+├── used-cars-ui/                  # Next.js frontend
+│   ├── app/
+│   │   ├── page.tsx               # Main multi-step valuation form
+│   │   ├── data.js                # Static dropdown data (makes, models, regions...)
+│   │   ├── layout.tsx
+│   │   └── globals.css
+│   ├── public/
+│   ├── package.json
+│   └── next.config.ts
+│
+├── main.py                        # FastAPI application & inference logic
+├── Dockerfile                     # Container definition for Render deployment
+├── requirements.txt                # Backend Python dependencies
+├── XGBR.json                       # Trained XGBoost model (native format)
+├── preprocessing_pipeline.pkl      # Fitted sklearn ColumnTransformer
+├── encoding_maps.pkl                # Target-encoding lookup tables
+├── Datapre_modeling.ipynb          # Data preprocessing & model training notebook
+├── Exploratory Data Analysis.ipynb # EDA notebook
 └── README.md
 ```
 
-> **Note:** The trained pipeline (`preprocessing_pipeline.pkl`) and model (`best_rf_model.pkl`) are produced by running `Datapre_modeling.ipynb`. They are not committed to this repository due to file size — generate them locally by running the notebook before launching the app.
-
 ---
 
-## 🚀 Getting Started
+## Getting Started / Local Setup
 
 ### Prerequisites
 
-- Python 3.10+
-- The [Craigslist Used Vehicles dataset](https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-data) saved as `vehicles.csv` in the project root (optional — the app falls back to synthetic demo data if absent).
+- **Node.js** >= 18
+- **Python** >= 3.11
+- `git`
 
-### Installation
+### 1. Clone the repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/ahmedhamdy-DS/Used-Cars-Prices-Prediction.git
+cd Used-Cars-Prices-Prediction
+```
 
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate      # On Windows: venv\Scripts\activate
+### 2. Run the backend (FastAPI)
 
-# Install dependencies
+```bash
+# From the repo root
 pip install -r requirements.txt
+
+uvicorn main:app --reload --port 8000
 ```
 
-### Train the model
+The API will be available at **`http://localhost:8000`**, with interactive docs at **`http://localhost:8000/docs`**.
 
-Run `Datapre_modeling.ipynb` end-to-end to generate `preprocessing_pipeline.pkl` and the trained model file in the project root.
-
-### Run the app
+### 3. Run the frontend (Next.js)
 
 ```bash
-streamlit run app.py
+# In a new terminal, from the repo root
+cd used-cars-ui
+npm install
+npm run dev
 ```
 
-The dashboard will open at `http://localhost:8501`.
+The app will be available at **`http://localhost:3000`**.
+
+### 4. Environment variables
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `ALLOWED_ORIGINS` | Backend (Render) | Comma-separated list of frontend origins allowed to call the API (CORS) |
+
+```bash
+# Example
+ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.vercel.app
+```
 
 ---
 
-## 🛠️ Tech Stack
+## API Endpoints
 
-- **Language:** Python
-- **Data & ML:** pandas, NumPy, scikit-learn, XGBoost, LightGBM, joblib
-- **Visualization:** Matplotlib, Seaborn, missingno, Plotly
-- **Web App:** Streamlit
-- **Environment:** Jupyter Notebook
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Health check — confirms the model and pipeline are loaded correctly |
+| `POST` | `/predict` | Accepts vehicle details and returns an estimated price, confidence range, and contributing factors |
+| `GET` | `/docs` | Interactive Swagger UI for exploring and testing the API |
+
+**Example request body for `POST /predict`:**
+
+```json
+{
+  "region": "SF bay area",
+  "year": 2015,
+  "manufacturer": "toyota",
+  "model": "camry",
+  "condition": "good",
+  "cylinders": "4 cylinders",
+  "fuel": "gas",
+  "odometer": 65000,
+  "title_status": "clean",
+  "transmission": "automatic",
+  "drive": "fwd",
+  "type": "sedan",
+  "paint_color": "silver",
+  "state": "ca"
+}
+```
+
+**Example response:**
+
+```json
+{
+  "estimated_price": 13799.63,
+  "predicted_price": 13799.63,
+  "confidence_low": 12699.63,
+  "confidence_high": 14899.63,
+  "factors": [
+    { "label": "Typical specs for this segment", "impact": 0 }
+  ]
+}
+```
 
 ---
 
-## 🔮 Future Improvements
+## Technical Notes
 
-- Hyperparameter tuning (GridSearch/Optuna) for further error reduction
-- SHAP-based explainability for individual predictions
-- Model versioning and CI/CD deployment (Docker + cloud hosting)
-- Expanding the dataset with more recent listings
+- **Target encoding**: `region` and `model` are high-cardinality categorical fields (thousands of distinct values), so they are encoded using precomputed mean-target lookup tables (`encoding_maps.pkl`) rather than one-hot encoding, keeping the feature space compact. Unseen categories at inference time fall back to the global mean price.
+- **Column order**: the FastAPI service reconstructs the exact column order the `ColumnTransformer` was fit with (`NUM_COLS + ORDINAL_COLS + CATEG_COLS + PASSTHROUGH_COLS`) before calling `.transform()`, since scikit-learn pipelines are order-sensitive.
+- **Model format**: the XGBoost model is persisted in its native `.json` format (`XGBR.json`) rather than pickled, for better long-term compatibility across XGBoost versions.
+- **Version pinning**: `requirements.txt` pins `scikit-learn`, `xgboost`, and `numpy` to the exact versions used during training to avoid `InconsistentVersionWarning` issues and silently degraded predictions when unpickling the preprocessing pipeline.
+- **CORS**: the backend reads allowed frontend origins from the `ALLOWED_ORIGINS` environment variable at startup, so new frontend deployments can be authorized without changing code.
 
 ---
 
-## 👤 Author
+## Author & Links
 
 **Ahmed Hamdy**
 
-- 💼 Portfolio: [my-web-3ciq.vercel.app](https://my-web-3ciq.vercel.app/)
-- 🔗 LinkedIn: [linkedin.com/in/ahmed-hamdy-4569a8360](https://www.linkedin.com/in/ahmed-hamdy-4569a8360/)
+- LinkedIn: [linkedin.com/in/your-profile](https://linkedin.com/in/your-profile)
+- Portfolio: [my-web-3ciq.vercel.app](https://my-web-3ciq.vercel.app/)
+- GitHub: [@ahmedhamdy-DS](https://github.com/ahmedhamdy-DS)
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License — feel free to use, modify, and build upon it.
-
----
-
-<p align="center">⭐ If you found this project useful, consider giving it a star!</p>
+<p align="center">Made with care and a lot of debugging.</p>
