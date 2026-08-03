@@ -6,7 +6,36 @@ import { selectOptions, modelsByManufacturer } from "./data";
 
 const API_URL = "https://used-cars-prices-prediction.onrender.com/predict";
 
-const EMPTY_FORM = {
+type FieldName =
+  | "manufacturer"
+  | "model"
+  | "year"
+  | "odometer"
+  | "condition"
+  | "cylinders"
+  | "fuel"
+  | "transmission"
+  | "drive"
+  | "type"
+  | "title_status"
+  | "paint_color"
+  | "region"
+  | "state";
+
+type FormState = Record<FieldName, string>;
+type FormErrors = Partial<Record<FieldName, string>>;
+
+type Factor = { label: string; impact: number };
+
+type PredictionResult = {
+  price: number;
+  low: number;
+  high: number;
+  factors: Factor[];
+  lowConfidence: boolean;
+};
+
+const EMPTY_FORM: FormState = {
   manufacturer: "",
   model: "",
   year: "",
@@ -24,7 +53,7 @@ const EMPTY_FORM = {
 };
 
 // Fields split across 3 steps
-const STEPS = [
+const STEPS: { title: string; subtitle: string; fields: FieldName[] }[] = [
   {
     title: "Vehicle",
     subtitle: "Manufacturer, model, year, and odometer",
@@ -42,7 +71,7 @@ const STEPS = [
   },
 ];
 
-const FIELD_LABELS = {
+const FIELD_LABELS: Record<FieldName, string> = {
   manufacturer: "Manufacturer",
   model: "Model",
   year: "Year",
@@ -59,21 +88,21 @@ const FIELD_LABELS = {
   state: "State",
 };
 
-function currency(n) {
+function currency(n: number): string {
   const num = Number(n);
   if (!Number.isFinite(num)) return "-";
   return num.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 }
 
-function titleCase(s) {
+function titleCase(s: string): string {
   return String(s).charAt(0).toUpperCase() + String(s).slice(1);
 }
 
 // Same "influencing factors" heuristic as main.py — used as a client-side
 // fallback if the server doesn't return `factors`, so the result card stays
 // useful either way.
-function mockFactors(form, price) {
-  const factors = [];
+function mockFactors(form: FormState, price: number): Factor[] {
+  const factors: Factor[] = [];
   const odometer = Number(form.odometer);
   const year = Number(form.year);
   const age = 2026 - year;
@@ -98,19 +127,29 @@ function mockFactors(form, price) {
   return factors.slice(0, 4);
 }
 
-function FieldError({ message }) {
+function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className="mt-1 text-xs text-red-600">{message}</p>;
 }
 
-function SelectInput({ field, value, options, onChange, error, placeholder, disabled }) {
+type SelectInputProps = {
+  field: FieldName;
+  value: string;
+  options: string[];
+  onChange: (field: FieldName, value: string) => void;
+  error?: string;
+  placeholder?: string;
+  disabled?: boolean;
+};
+
+function SelectInput({ field, value, options, onChange, error, placeholder, disabled }: SelectInputProps) {
   return (
     <div className="flex flex-col">
       <label className="mb-1.5 text-sm font-medium text-slate-700">{FIELD_LABELS[field]}</label>
       <select
         value={value}
         disabled={disabled}
-        onChange={(e) => onChange(field, e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(field, e.target.value)}
         className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition
           focus:ring-2 focus:ring-blue-500/30
           ${error ? "border-red-400 focus:border-red-500" : "border-slate-300 focus:border-blue-500"}
@@ -128,7 +167,17 @@ function SelectInput({ field, value, options, onChange, error, placeholder, disa
   );
 }
 
-function NumberInput({ field, value, onChange, error, placeholder, min, max }) {
+type NumberInputProps = {
+  field: FieldName;
+  value: string;
+  onChange: (field: FieldName, value: string) => void;
+  error?: string;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+};
+
+function NumberInput({ field, value, onChange, error, placeholder, min, max }: NumberInputProps) {
   return (
     <div className="flex flex-col">
       <label className="mb-1.5 text-sm font-medium text-slate-700">{FIELD_LABELS[field]}</label>
@@ -138,7 +187,7 @@ function NumberInput({ field, value, onChange, error, placeholder, min, max }) {
         min={min}
         max={max}
         placeholder={placeholder}
-        onChange={(e) => onChange(field, e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(field, e.target.value)}
         className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition
           focus:ring-2 focus:ring-blue-500/30
           ${error ? "border-red-400 focus:border-red-500" : "border-slate-300 focus:border-blue-500"}`}
@@ -149,17 +198,23 @@ function NumberInput({ field, value, onChange, error, placeholder, min, max }) {
 }
 
 export default function CarPricePredictor() {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [step, setStep] = useState(0);
-  const [errors, setErrors] = useState({});
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState(null);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [step, setStep] = useState<number>(0);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [result, setResult] = useState<PredictionResult | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const modelOptions = useMemo(() => modelsByManufacturer[form.manufacturer] ?? [], [form.manufacturer]);
-  const sortedModelOptions = useMemo(() => [...modelOptions].sort((a, b) => a.localeCompare(b)), [modelOptions]);
+  const modelOptions = useMemo<string[]>(
+    () => (modelsByManufacturer as Record<string, string[]>)[form.manufacturer] ?? [],
+    [form.manufacturer]
+  );
+  const sortedModelOptions = useMemo<string[]>(
+    () => [...modelOptions].sort((a, b) => a.localeCompare(b)),
+    [modelOptions]
+  );
 
-  function updateField(field, value) {
+  function updateField(field: FieldName, value: string) {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       if (field === "manufacturer") next.model = "";
@@ -168,8 +223,8 @@ export default function CarPricePredictor() {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
-  function validateStep(index) {
-    const stepErrors = {};
+  function validateStep(index: number): boolean {
+    const stepErrors: FormErrors = {};
     for (const field of STEPS[index].fields) {
       const value = form[field];
       if (value === "" || value === null || value === undefined) {
@@ -198,7 +253,7 @@ export default function CarPricePredictor() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validateStep(step)) return;
 
@@ -224,7 +279,7 @@ export default function CarPricePredictor() {
       const price = data.estimated_price ?? data.predicted_price;
       const low = data.confidence_low ?? price * 0.92;
       const high = data.confidence_high ?? price * 1.08;
-      const factors = data.factors && data.factors.length ? data.factors : mockFactors(form, price);
+      const factors: Factor[] = data.factors && data.factors.length ? data.factors : mockFactors(form, price);
       const lowConfidence = Boolean(data.low_confidence);
 
       setResult({ price, low, high, factors, lowConfidence });
@@ -297,18 +352,29 @@ export default function CarPricePredictor() {
 
                   {step === 1 && (
                     <>
-                      {["condition", "cylinders", "fuel", "transmission", "drive", "type", "title_status", "paint_color"].map(
-                        (field) => (
-                          <SelectInput
-                            key={field}
-                            field={field}
-                            value={form[field]}
-                            options={[...selectOptions[field]].sort((a, b) => String(a).localeCompare(String(b)))}
-                            onChange={updateField}
-                            error={errors[field]}
-                          />
-                        )
-                      )}
+                      {(
+                        [
+                          "condition",
+                          "cylinders",
+                          "fuel",
+                          "transmission",
+                          "drive",
+                          "type",
+                          "title_status",
+                          "paint_color",
+                        ] as FieldName[]
+                      ).map((field) => (
+                        <SelectInput
+                          key={field}
+                          field={field}
+                          value={form[field]}
+                          options={[...(selectOptions as Record<string, string[]>)[field]].sort(
+                            (a: string, b: string) => a.localeCompare(b)
+                          )}
+                          onChange={updateField}
+                          error={errors[field]}
+                        />
+                      ))}
                     </>
                   )}
 
@@ -317,14 +383,14 @@ export default function CarPricePredictor() {
                       <SelectInput
                         field="region"
                         value={form.region}
-                        options={[...selectOptions.region].sort((a, b) => a.localeCompare(b))}
+                        options={[...selectOptions.region].sort((a: string, b: string) => a.localeCompare(b))}
                         onChange={updateField}
                         error={errors.region}
                       />
                       <SelectInput
                         field="state"
                         value={form.state}
-                        options={[...selectOptions.state].sort((a, b) => a.localeCompare(b))}
+                        options={[...selectOptions.state].sort((a: string, b: string) => a.localeCompare(b))}
                         onChange={updateField}
                         error={errors.state}
                       />
@@ -449,3 +515,4 @@ export default function CarPricePredictor() {
     </main>
   );
 }
+

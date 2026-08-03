@@ -38,15 +38,9 @@ CATEG_COLS = ["fuel", "title_status", "transmission", "drive", "type", "paint_co
 PASSTHROUGH_COLS = ["condition_missing", "region", "model"]
 COLS_ORDER = NUM_COLS + ORDINAL_COLS + CATEG_COLS + PASSTHROUGH_COLS
 
-# -----------------------------------------------------------------
-# App + CORS
-# -----------------------------------------------------------------
 app = FastAPI(title="Used Car Price Prediction API", version="1.0.0")
 
-# FIX: allow_origins used to be hardcoded to localhost:3000 only, which blocks
-# any frontend deployed elsewhere (Vercel/Netlify/etc). Set the ALLOWED_ORIGINS
-# env var on Render to a comma-separated list, e.g.
-#   ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend.vercel.app
+
 _default_origins = "http://localhost:3000"
 ALLOWED_ORIGINS = [
     origin.strip()
@@ -132,12 +126,7 @@ class PredictionFactor(BaseModel):
     impact: float  # signed dollar impact, mocked for display purposes
 
 
-# Cell 10 of the notebook filters training rows to price between $500 and
-# $150,000 before fitting the model — so the model never saw a real listing
-# outside that range. Any raw prediction outside it isn't a "low price",
-# it's the model extrapolating blindly on an out-of-distribution input
-# (e.g. an exotic/rare vehicle combo). Clamp to this range instead of 0,
-# and flag it so the UI can tell the person the estimate is less reliable.
+
 PRICE_FLOOR = 500.0
 PRICE_CEILING = 150000.0
 
@@ -196,12 +185,7 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
 
     df = pd.DataFrame([row])
 
-    # Explicit dtype casting as requested: numeric columns -> float,
-    # object/string columns stay as plain Python strings (the pipeline's
-    # OneHotEncoder/OrdinalEncoder operate on string categories, not
-    # pandas 'category' dtype — casting to 'category' here would not
-    # change behaviour since these go through sklearn encoders, not
-    # XGBoost's native categorical handling).
+
     numeric_cols = ["year", "cylinders", "odometer", "condition_missing", "region", "model"]
     df[numeric_cols] = df[numeric_cols].astype(float)
 
