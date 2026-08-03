@@ -57,8 +57,6 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-
-    allow_origin_regex=r"^https://used-cars-prices-prediction.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -140,6 +138,7 @@ class PredictionResponse(BaseModel):
     confidence_low: float
     confidence_high: float
     factors: list[PredictionFactor]
+    debug: dict | None = None  # TEMPORARY — remove once the $0 issue is found
 
 
 # -----------------------------------------------------------------
@@ -155,14 +154,15 @@ def extract_cylinders(raw: str) -> float:
 
 
 def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
+    """Builds a single-row DataFrame with exactly the columns/dtypes/order
+    the ColumnTransformer was fit on.
 
-    clean_region = car.region.strip().lower()
-    clean_model = car.model.strip().lower()
-
-
-    region_val = next((v for k, v in REGION_MAP.items() if str(k).strip().lower() == clean_region), GLOBAL_MEAN_PRICE)
-    model_val = next((v for k, v in MODEL_MAP.items() if str(k).strip().lower() == clean_model), GLOBAL_MEAN_PRICE)
-
+    NOTE: 'manufacturer' and 'state' are accepted from the client for a
+    better UX (manufacturer drives the cascading Model dropdown on the
+    frontend) but were never part of the training feature set — the
+    notebook's `cols_order` for the ColumnTransformer never included them.
+    They are intentionally not used below.
+    """
     row = {
         "year": float(car.year),
         "cylinders": extract_cylinders(car.cylinders),
@@ -174,13 +174,24 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
         "drive": car.drive,
         "type": car.type,
         "paint_color": car.paint_color,
+        # The form always supplies a condition, so this flag is always 0 at inference time
+        # (it only ever became 1 in training for rows where 'condition' was missing from the raw dataset).
         "condition_missing": 0.0,
-        "region": region_val,
-        "model": model_val,
+        # Target-encode high-cardinality columns using the training-set lookup tables.
+        # Unseen categories fall back to the global mean price (same behaviour as
+        # kfold_target_encode()'s .fillna(global_mean) in the notebook).
+        "region": REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE),
+        "model": MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE),
     }
 
     df = pd.DataFrame([row])
 
+    # Explicit dtype casting as requested: numeric columns -> float,
+    # object/string columns stay as plain Python strings (the pipeline's
+    # OneHotEncoder/OrdinalEncoder operate on string categories, not
+    # pandas 'category' dtype — casting to 'category' here would not
+    # change behaviour since these go through sklearn encoders, not
+    # XGBoost's native categorical handling).
     numeric_cols = ["year", "cylinders", "odometer", "condition_missing", "region", "model"]
     df[numeric_cols] = df[numeric_cols].astype(float)
 
@@ -247,15 +258,6 @@ def predict(car: CarFeatures):
         features_df = build_feature_dataframe(car)
         transformed = preprocessing_pipeline.transform(features_df)
         raw_prediction = float(model.predict(transformed)[0])
-
-      
-        print("DEBUG region_encoded:", REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE))
-        print("DEBUG model_encoded:", MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE))
-        print("DEBUG global_mean:", GLOBAL_MEAN_PRICE)
-        print("DEBUG features_df:\n", features_df.to_dict(orient="records"))
-        print("DEBUG raw_prediction (before clamp):", raw_prediction)
-        # -----------------------------------------------------------
-
         predicted_price = max(raw_prediction, 0.0)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Prediction failed: {exc}") from exc
@@ -263,11 +265,29 @@ def predict(car: CarFeatures):
     low, high = mock_confidence_interval(predicted_price)
     factors = mock_factors(car, predicted_price)
 
+    # TEMPORARY debug block — tells us exactly what went into the model.
+    # Delete this dict (and the `debug` field on PredictionResponse above)
+    # once the $0 issue is diagnosed.
+    debug_info = {
+        "cylinders_input": car.cylinders,
+        "cylinders_extracted": extract_cylinders(car.cylinders),
+        "region_input": car.region,
+        "region_encoded": REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE),
+        "region_was_in_training_data": car.region in REGION_MAP,
+        "model_input": car.model,
+        "model_encoded": MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE),
+        "model_was_in_training_data": car.model in MODEL_MAP,
+        "raw_prediction_before_clamp": raw_prediction,
+        "transformed_feature_vector": transformed.tolist()
+        if hasattr(transformed, "tolist")
+        else str(transformed),
+    }
+
     return PredictionResponse(
         estimated_price=round(predicted_price, 2),
         predicted_price=round(predicted_price, 2),
         confidence_low=low,
         confidence_high=high,
         factors=factors,
+        debug=debug_info,
     )
-
