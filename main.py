@@ -232,9 +232,7 @@ def mock_factors(car: CarFeatures, price: float) -> list[PredictionFactor]:
     return factors[:4]
 
 
-# -----------------------------------------------------------------
-# Routes
-# -----------------------------------------------------------------
+
 @app.get("/health")
 def health():
     return {

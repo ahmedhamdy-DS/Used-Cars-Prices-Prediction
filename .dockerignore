@@ -1,0 +1,5 @@
+used-cars-ui/
+vehicles.csv
+*.ipynb
+__pycache__/
+.git/
