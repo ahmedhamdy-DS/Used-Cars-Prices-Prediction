@@ -1,22 +1,3 @@
-"""
-=================================================================================
- USED VEHICLE PRICE PREDICTOR — Premium SaaS-style Streamlit Application
-=================================================================================
-Author : Expert Full-Stack Data Scientist / UI-UX Designer
-Purpose: Deploy a Random Forest Regressor (trained on used-vehicle listings)
-         behind a polished, multi-page Streamlit dashboard.
-
-Expected artifacts in the working directory:
-    - preprocessing_pipeline.pkl   -> fitted sklearn Pipeline / ColumnTransformer
-                                       (handles K-Fold target encoding maps,
-                                       RobustScaler, imputers, etc. — fitted
-                                       ONLY on training data to avoid leakage)
-    - best_rf_model.pkl            -> fitted RandomForestRegressor
-    - vehicles.csv (optional)      -> raw dataset used for the Home/EDA pages.
-                                       If absent, a small synthetic sample is
-                                       generated so the app never crashes.
-=================================================================================
-"""
 
 import os
 import joblib
@@ -204,31 +185,26 @@ def load_data(path: str = DATA_PATH) -> pd.DataFrame:
 
 @st.cache_resource(show_spinner="Loading trained pipeline & model...")
 def load_pipeline_and_model():
-    """
-    Loads the fitted preprocessing pipeline and the trained Random Forest model.
-    Cached as a resource so it is loaded only once per session (fast inference).
-    Returns (pipeline, model, error_message). If loading fails, error_message
-    contains a human-readable explanation and pipeline/model are None.
-    """
+
     try:
         if not os.path.exists(PIPELINE_PATH) or not os.path.exists(MODEL_PATH):
             missing = [p for p in [PIPELINE_PATH, MODEL_PATH] if not os.path.exists(p)]
             return None, None, (
-                f"⚠️ Missing required file(s): {', '.join(missing)}. "
+                f" Missing required file(s): {', '.join(missing)}. "
                 f"Please place them in the app's working directory."
             )
         pipeline = joblib.load(PIPELINE_PATH)
         model = joblib.load(MODEL_PATH)
         return pipeline, model, None
     except Exception as e:
-        return None, None, f"⚠️ Failed to load model artifacts: {e}"
+        return None, None, f" Failed to load model artifacts: {e}"
 
 
 # =================================================================================
 # 5. PAGE 1 — HOME & DATA OVERVIEW
 # =================================================================================
 def render_home_page(df: pd.DataFrame):
-    st.markdown("# 🏠 Used Vehicle Price Predictor")
+    st.markdown("#  Used Vehicle Price Predictor")
     st.markdown(
         '<p class="subtitle-text">An end-to-end Machine Learning platform that '
         'evaluates the fair market value of used vehicles using a tuned '
@@ -269,7 +245,7 @@ def render_home_page(df: pd.DataFrame):
         "trends or generate a live price prediction."
     )
 
-    with st.expander("📂 View Raw Dataset Sample"):
+    with st.expander(" View Raw Dataset Sample"):
         st.dataframe(df.head(50), use_container_width=True)
 
 
