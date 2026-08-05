@@ -18,6 +18,10 @@
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square" alt="Status" />
   <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License" />
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome" />
+  <br><br>
+  <a href="https://used-cars-prices-prediction-la86-chi.vercel.app/">
+    <img src="https://img.shields.io/badge/Live%20Demo-Open%20Dashboard-brightgreen?style=flat-square" alt="Live Demo" />
+  </a>
 </p>
 
 
