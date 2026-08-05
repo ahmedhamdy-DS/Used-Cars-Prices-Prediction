@@ -20,13 +20,11 @@
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square" alt="PRs Welcome" />
   <br><br>
   <a href="https://used-cars-prices-prediction-la86-chi.vercel.app/">
-    <img src="https://img.shields.io/badge/Live%20Demo-Open%20Dashboard-brightgreen?style=flat-square" alt="Live Demo" />
+    <img src="https://img.shields.io/badge/Live%20Demo-Open%20Dashboard-orange?style=flat-square" alt="Live Demo" />
   </a>
 </p>
 
-
 ## Overview
-
 **AutoValuate** is a full-stack machine learning application that estimates the fair market value of a used car in seconds. A user answers a short, guided form about their vehicle — make, model, condition, mileage, and location — and a trained **XGBoost** regression model, backed by a **scikit-learn** preprocessing pipeline, returns an instant price estimate along with a confidence range and the key factors driving the valuation.
 
 Under the hood, the model was trained on the well-known **Craigslist used vehicles dataset**, using target encoding for high-cardinality categorical features (like region and model) to keep the pipeline both accurate and production-friendly. The result is wrapped in a clean **FastAPI** REST service and a polished, modern **Next.js** interface — giving it the feel of a real SaaS product rather than a notebook demo.
