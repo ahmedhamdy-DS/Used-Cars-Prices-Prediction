@@ -249,7 +249,7 @@ ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.vercel.app
 
 **Ahmed Hamdy**
 
-- LinkedIn: [linkedin.com/in/your-profile](https://linkedin.com/in/your-profile)
+- LinkedIn: [linkedin.com/in/My-profile](https://www.linkedin.com/in/ahmed-hamdy-4569a8360/)
 - Portfolio: [my-web-3ciq.vercel.app](https://my-web-3ciq.vercel.app/)
 - GitHub: [@ahmedhamdy-DS](https://github.com/ahmedhamdy-DS)
 
