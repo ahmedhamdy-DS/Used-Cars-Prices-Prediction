@@ -129,7 +129,7 @@ function mockFactors(form: FormState, price: number): Factor[] {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-1 text-xs text-red-600">{message}</p>;
+  return <p className="mt-1 text-xs text-negative">{message}</p>;
 }
 
 type SelectInputProps = {
@@ -145,15 +145,15 @@ type SelectInputProps = {
 function SelectInput({ field, value, options, onChange, error, placeholder, disabled }: SelectInputProps) {
   return (
     <div className="flex flex-col">
-      <label className="mb-1.5 text-sm font-medium text-slate-700">{FIELD_LABELS[field]}</label>
+      <label className="mb-1.5 text-sm font-medium text-stone-700">{FIELD_LABELS[field]}</label>
       <select
         value={value}
         disabled={disabled}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(field, e.target.value)}
-        className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition
-          focus:ring-2 focus:ring-blue-500/30
-          ${error ? "border-red-400 focus:border-red-500" : "border-slate-300 focus:border-blue-500"}
-          disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`}
+        className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 outline-none transition
+          focus:ring-2 focus:ring-accent/30
+          ${error ? "border-negative/60 focus:border-negative" : "border-stone-300 focus:border-accent"}
+          disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400`}
       >
         <option value="">{placeholder ?? `Select ${FIELD_LABELS[field].toLowerCase()}`}</option>
         {options.map((opt) => (
@@ -180,7 +180,7 @@ type NumberInputProps = {
 function NumberInput({ field, value, onChange, error, placeholder, min, max }: NumberInputProps) {
   return (
     <div className="flex flex-col">
-      <label className="mb-1.5 text-sm font-medium text-slate-700">{FIELD_LABELS[field]}</label>
+      <label className="mb-1.5 text-sm font-medium text-stone-700">{FIELD_LABELS[field]}</label>
       <input
         type="number"
         value={value}
@@ -188,9 +188,9 @@ function NumberInput({ field, value, onChange, error, placeholder, min, max }: N
         max={max}
         placeholder={placeholder}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(field, e.target.value)}
-        className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition
-          focus:ring-2 focus:ring-blue-500/30
-          ${error ? "border-red-400 focus:border-red-500" : "border-slate-300 focus:border-blue-500"}`}
+        className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 outline-none transition
+          focus:ring-2 focus:ring-accent/30
+          ${error ? "border-negative/60 focus:border-negative" : "border-stone-300 focus:border-accent"}`}
       />
       <FieldError message={error} />
     </div>
@@ -293,37 +293,37 @@ export default function CarPricePredictor() {
   const progressPct = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-stone-50 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <header className="mb-6 text-center sm:mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Instant AI-Powered Valuation</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">AI Car Price Estimator</h1>
-          <p className="mt-1 text-sm text-slate-500">Estimate your used car&apos;s value in under a minute</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Instant AI-Powered Valuation</p>
+          <h1 className="mt-1 text-2xl font-bold text-stone-900 sm:text-3xl">AI Car Price Estimator</h1>
+          <p className="mt-1 text-sm text-stone-500">Estimate your used car&apos;s value in under a minute</p>
         </header>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-8">
           {/* FORM */}
           <section className="lg:col-span-3">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
               {/* Progress */}
               <div className="mb-6">
-                <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
+                <div className="mb-2 flex items-center justify-between text-xs text-stone-500">
                   {STEPS.map((s, i) => (
-                    <span key={s.title} className={i <= step ? "font-semibold text-blue-600" : ""}>
+                    <span key={s.title} className={i <= step ? "font-semibold text-accent" : ""}>
                       {i + 1}. {s.title}
                     </span>
                   ))}
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
                   <div
-                    className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                    className="h-full rounded-full bg-accent transition-all duration-300"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
               </div>
 
-              <h2 className="mb-1 text-base font-semibold text-slate-900">{STEPS[step].title}</h2>
-              <p className="mb-5 text-xs text-slate-500">{STEPS[step].subtitle}</p>
+              <h2 className="mb-1 text-base font-semibold text-stone-900">{STEPS[step].title}</h2>
+              <p className="mb-5 text-xs text-stone-500">{STEPS[step].subtitle}</p>
 
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -403,8 +403,8 @@ export default function CarPricePredictor() {
                     type="button"
                     onClick={goBack}
                     disabled={step === 0}
-                    className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700
-                               transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+                    className="w-full rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-semibold text-stone-700
+                               transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                   >
                     Back
                   </button>
@@ -413,7 +413,7 @@ export default function CarPricePredictor() {
                     <button
                       type="button"
                       onClick={goNext}
-                      className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
+                      className="w-full rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:w-auto"
                     >
                       Next
                     </button>
@@ -421,8 +421,8 @@ export default function CarPricePredictor() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition
-                                 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+                      className="w-full rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition
+                                 hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-stone-300 sm:w-auto"
                     >
                       {loading ? "Calculating..." : "Estimate Price"}
                     </button>
@@ -430,7 +430,7 @@ export default function CarPricePredictor() {
                 </div>
 
                 {apiError && (
-                  <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  <div className="mt-4 rounded-lg border border-negative/20 bg-negative/5 px-4 py-3 text-sm text-negative">
                     {apiError}
                   </div>
                 )}
@@ -440,12 +440,12 @@ export default function CarPricePredictor() {
 
           {/* RESULT */}
           <section className="lg:col-span-2">
-            <div className="lg:sticky lg:top-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-              <h2 className="mb-5 text-sm font-semibold text-slate-900">Valuation Result</h2>
+            <div className="lg:sticky lg:top-8 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
+              <h2 className="mb-5 text-sm font-semibold text-stone-900">Valuation Result</h2>
 
               {!result && !loading && (
-                <div className="flex h-56 flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 px-4 text-center">
-                  <p className="text-sm text-slate-400">
+                <div className="flex h-56 flex-col items-center justify-center rounded-xl border border-dashed border-stone-200 px-4 text-center">
+                  <p className="text-sm text-stone-400">
                     Complete the form and click &quot;Estimate Price&quot; to see your valuation here
                   </p>
                 </div>
@@ -453,7 +453,7 @@ export default function CarPricePredictor() {
 
               {loading && (
                 <div className="flex h-56 items-center justify-center">
-                  <p className="text-sm text-slate-400">Calculating...</p>
+                  <p className="text-sm text-stone-400">Calculating...</p>
                 </div>
               )}
 
@@ -466,32 +466,32 @@ export default function CarPricePredictor() {
                   )}
 
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Estimated Price</p>
-                    <p className="mt-1 text-4xl font-extrabold text-emerald-600">{currency(result.price)}</p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Estimated Price</p>
+                    <p className="mt-1 text-4xl font-extrabold text-positive">{currency(result.price)}</p>
+                    <p className="mt-1 text-xs text-stone-500">
                       Estimated range: {currency(result.low)} &ndash; {currency(result.high)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-400">Factors influencing this price</p>
+                    <p className="mb-3 text-xs font-medium uppercase tracking-wider text-stone-400">Factors influencing this price</p>
                     <ul className="space-y-2.5">
                       {result.factors.map((f) => {
                         const positive = f.impact > 0;
                         const negative = f.impact < 0;
                         return (
-                          <li key={f.label} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+                          <li key={f.label} className="flex items-center justify-between gap-3 rounded-lg bg-stone-50 px-3 py-2">
                             <div className="flex min-w-0 items-center gap-2">
                               <span
                                 className={`h-2 w-2 shrink-0 rounded-full ${
-                                  positive ? "bg-emerald-500" : negative ? "bg-red-500" : "bg-slate-300"
+                                  positive ? "bg-positive" : negative ? "bg-negative" : "bg-stone-300"
                                 }`}
                               />
-                              <span className="truncate text-xs text-slate-600">{f.label}</span>
+                              <span className="truncate text-xs text-stone-600">{f.label}</span>
                             </div>
                             <span
                               className={`shrink-0 text-xs font-semibold ${
-                                positive ? "text-emerald-600" : negative ? "text-red-600" : "text-slate-400"
+                                positive ? "text-positive" : negative ? "text-negative" : "text-stone-400"
                               }`}
                             >
                               {f.impact === 0 ? "—" : `${positive ? "+" : ""}${currency(f.impact)}`}
@@ -502,7 +502,7 @@ export default function CarPricePredictor() {
                     </ul>
                   </div>
 
-                  <p className="border-t border-slate-100 pt-4 text-[11px] leading-relaxed text-slate-400">
+                  <p className="border-t border-stone-100 pt-4 text-[11px] leading-relaxed text-stone-400">
                     Estimate generated by an XGBoost model trained on real listing data. The range and factors
                     are illustrative approximations, not a guaranteed sale price.
                   </p>
