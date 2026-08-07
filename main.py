@@ -1,16 +1,4 @@
-"""
-Used Car Price Prediction API
-==============================
-Loads:
-  - XGBR.json               -> trained XGBRegressor (native XGBoost format)
-  - preprocessing_pipeline.pkl -> fitted sklearn ColumnTransformer
-  - encoding_maps.pkl        -> target-encoding lookup tables for
-                                 'region' / 'model' + a numeric fallback
-                                 for 'cylinders' (see notebook_addendum/)
 
-Run with:
-    uvicorn main:app --reload --port 8000
-"""
 
 import os
 import re
@@ -30,8 +18,6 @@ MODEL_PATH = os.path.join(BASE_DIR, "XGBR.json")
 PIPELINE_PATH = os.path.join(BASE_DIR, "preprocessing_pipeline.pkl")
 ENCODING_MAPS_PATH = os.path.join(BASE_DIR, "encoding_maps.pkl")
 
-# Exact column order the ColumnTransformer was fit with
-# (num_cols + ordinal_cols + categ_cols + passthrough_cols from the notebook)
 NUM_COLS = ["year", "cylinders", "odometer"]
 ORDINAL_COLS = ["condition"]
 CATEG_COLS = ["fuel", "title_status", "transmission", "drive", "type", "paint_color"]
@@ -173,12 +159,9 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
         "drive": car.drive,
         "type": car.type,
         "paint_color": car.paint_color,
-        # The form always supplies a condition, so this flag is always 0 at inference time
-        # (it only ever became 1 in training for rows where 'condition' was missing from the raw dataset).
+
         "condition_missing": 0.0,
-        # Target-encode high-cardinality columns using the training-set lookup tables.
-        # Unseen categories fall back to the global mean price (same behaviour as
-        # kfold_target_encode()'s .fillna(global_mean) in the notebook).
+
         "region": REGION_MAP.get(car.region, GLOBAL_MEAN_PRICE),
         "model": MODEL_MAP.get(car.model, GLOBAL_MEAN_PRICE),
     }
@@ -202,9 +185,7 @@ def mock_confidence_interval(price: float) -> tuple[float, float]:
 
 
 def mock_factors(car: CarFeatures, price: float) -> list[PredictionFactor]:
-    """Illustrative, rule-of-thumb 'what moved the price' bullets for the UI.
-    These are NOT derived from SHAP/feature-importance on the actual model —
-    swap this out for a real SHAP explainer if/when you want true attributions."""
+
     factors: list[PredictionFactor] = []
 
     if car.odometer > 120000:
@@ -250,7 +231,7 @@ def predict(car: CarFeatures):
         features_df = build_feature_dataframe(car)
         transformed = preprocessing_pipeline.transform(features_df)
         raw_prediction = float(model.predict(transformed)[0])
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Prediction failed: {exc}") from exc
 
     low_confidence = raw_prediction < PRICE_FLOOR or raw_prediction > PRICE_CEILING
