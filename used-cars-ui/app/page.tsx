@@ -293,11 +293,7 @@ export default function CarPricePredictor() {
       {/* LEFT SIDE - VISUAL HERO (Dark Green Theme) */}
       <div className="relative flex flex-col justify-center bg-[#0d2e24] p-8 text-white lg:w-2/5 lg:p-16">
         <div className="absolute inset-0 z-0 overflow-hidden">
-          <img
-            src=""
-            alt="Luxury modern car"
-            className="h-full w-full object-cover opacity-20 mix-blend-luminosity"
-          />
+
           <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e24] via-[#0d2e24]/80 to-transparent" />
         </div>
 
