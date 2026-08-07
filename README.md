@@ -24,6 +24,10 @@
   </a>
 </p>
 
+
+<img src="./used-cars-ui/public/car.png" alt="Hieroglyphs-AI overview" width="800"/>
+
+
 ## Overview
 **AutoValuate** is a full-stack machine learning application that estimates the fair market value of a used car in seconds. A user answers a short, guided form about their vehicle — make, model, condition, mileage, and location — and a trained **XGBoost** regression model, backed by a **scikit-learn** preprocessing pipeline, returns an instant price estimate along with a confidence range and the key factors driving the valuation.
 
