@@ -294,7 +294,7 @@ export default function CarPricePredictor() {
       <div className="relative flex flex-col justify-center bg-[#0d2e24] p-8 text-white lg:w-2/5 lg:p-16">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <img
-            src="https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=1000&auto=format&fit=crop"
+            src="/public/12e4686fd59d9db2c9975798620efed8.jpg"
             alt="Luxury modern car"
             className="h-full w-full object-cover opacity-20 mix-blend-luminosity"
           />
