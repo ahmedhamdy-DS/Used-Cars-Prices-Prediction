@@ -1,4 +1,3 @@
-// app/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -52,7 +51,6 @@ const EMPTY_FORM: FormState = {
   state: "",
 };
 
-// Fields split across 3 steps
 const STEPS: { title: string; subtitle: string; fields: FieldName[] }[] = [
   {
     title: "Vehicle",
@@ -98,9 +96,6 @@ function titleCase(s: string): string {
   return String(s).charAt(0).toUpperCase() + String(s).slice(1);
 }
 
-// Same "influencing factors" heuristic as main.py — used as a client-side
-// fallback if the server doesn't return `factors`, so the result card stays
-// useful either way.
 function mockFactors(form: FormState, price: number): Factor[] {
   const factors: Factor[] = [];
   const odometer = Number(form.odometer);
@@ -129,7 +124,7 @@ function mockFactors(form: FormState, price: number): Factor[] {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
-  return <p className="mt-1 text-xs text-negative">{message}</p>;
+  return <p className="mt-1.5 text-xs font-medium text-negative">{message}</p>;
 }
 
 type SelectInputProps = {
@@ -145,15 +140,15 @@ type SelectInputProps = {
 function SelectInput({ field, value, options, onChange, error, placeholder, disabled }: SelectInputProps) {
   return (
     <div className="flex flex-col">
-      <label className="mb-1.5 text-sm font-medium text-stone-700">{FIELD_LABELS[field]}</label>
+      <label className="mb-1.5 text-sm font-semibold text-slate-700">{FIELD_LABELS[field]}</label>
       <select
         value={value}
         disabled={disabled}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(field, e.target.value)}
-        className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 outline-none transition
-          focus:ring-2 focus:ring-accent/30
-          ${error ? "border-negative/60 focus:border-negative" : "border-stone-300 focus:border-accent"}
-          disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400`}
+        className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition-all duration-200
+          focus:ring-2 focus:ring-accent/40
+          ${error ? "border-negative/60 focus:border-negative" : "border-slate-200 focus:border-accent"}
+          disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400`}
       >
         <option value="">{placeholder ?? `Select ${FIELD_LABELS[field].toLowerCase()}`}</option>
         {options.map((opt) => (
@@ -180,7 +175,7 @@ type NumberInputProps = {
 function NumberInput({ field, value, onChange, error, placeholder, min, max }: NumberInputProps) {
   return (
     <div className="flex flex-col">
-      <label className="mb-1.5 text-sm font-medium text-stone-700">{FIELD_LABELS[field]}</label>
+      <label className="mb-1.5 text-sm font-semibold text-slate-700">{FIELD_LABELS[field]}</label>
       <input
         type="number"
         value={value}
@@ -188,9 +183,9 @@ function NumberInput({ field, value, onChange, error, placeholder, min, max }: N
         max={max}
         placeholder={placeholder}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(field, e.target.value)}
-        className={`w-full rounded-lg border bg-white px-3 py-2.5 text-sm text-stone-900 outline-none transition
-          focus:ring-2 focus:ring-accent/30
-          ${error ? "border-negative/60 focus:border-negative" : "border-stone-300 focus:border-accent"}`}
+        className={`w-full rounded-xl border bg-white px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition-all duration-200
+          focus:ring-2 focus:ring-accent/40
+          ${error ? "border-negative/60 focus:border-negative" : "border-slate-200 focus:border-accent"}`}
       />
       <FieldError message={error} />
     </div>
@@ -293,223 +288,271 @@ export default function CarPricePredictor() {
   const progressPct = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-6 text-center sm:mb-8">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Instant AI-Powered Valuation</p>
-          <h1 className="mt-1 text-2xl font-bold text-stone-900 sm:text-3xl">AI Car Price Estimator</h1>
-          <p className="mt-1 text-sm text-stone-500">Estimate your used car&apos;s value in under a minute</p>
-        </header>
+    <main className="flex min-h-screen flex-col lg:flex-row bg-slate-50">
+      
+      {/* LEFT SIDE - VISUAL HERO (Dark Green Theme) */}
+      <div className="relative flex flex-col justify-center bg-[#0d2e24] p-8 text-white lg:w-2/5 lg:p-16">
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=1000&auto=format&fit=crop"
+            alt="Luxury modern car"
+            className="h-full w-full object-cover opacity-20 mix-blend-luminosity"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0d2e24] via-[#0d2e24]/80 to-transparent" />
+        </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5 lg:gap-8">
-          {/* FORM */}
-          <section className="lg:col-span-3">
-            <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
-              {/* Progress */}
-              <div className="mb-6">
-                <div className="mb-2 flex items-center justify-between text-xs text-stone-500">
-                  {STEPS.map((s, i) => (
-                    <span key={s.title} className={i <= step ? "font-semibold text-accent" : ""}>
-                      {i + 1}. {s.title}
-                    </span>
-                  ))}
+        <div className="relative z-10 mx-auto w-full max-w-md">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#6ee7b7] backdrop-blur-md">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#34d399] opacity-75"></span>
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#34d399]"></span>
+            </span>
+            Instant AI Valuation
+          </div>
+          <h1 className="mb-5 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+            AI Car Price Estimator
+          </h1>
+          <p className="text-sm leading-relaxed text-slate-300 sm:text-base">
+            Get an accurate market value for your used vehicle in seconds. Our machine learning model analyzes thousands of data points to give you the best estimate.
+          </p>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE - INTERACTIVE APP */}
+      <div className="flex flex-1 items-center justify-center p-4 py-12 lg:h-screen lg:overflow-y-auto lg:p-10">
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-5 xl:gap-10">
+            
+            {/* FORM SECTION */}
+            <section className="xl:col-span-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8">
+                {/* Progress */}
+                <div className="mb-8">
+                  <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+                    {STEPS.map((s, i) => (
+                      <span key={s.title} className={i <= step ? "font-bold text-accent" : "font-medium"}>
+                        {i + 1}. {s.title}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-accent transition-all duration-500 ease-out"
+                      style={{ width: `${progressPct}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
-                  <div
-                    className="h-full rounded-full bg-accent transition-all duration-300"
-                    style={{ width: `${progressPct}%` }}
-                  />
+
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-slate-900">{STEPS[step].title}</h2>
+                  <p className="mt-1 text-sm text-slate-500">{STEPS[step].subtitle}</p>
                 </div>
-              </div>
 
-              <h2 className="mb-1 text-base font-semibold text-stone-900">{STEPS[step].title}</h2>
-              <p className="mb-5 text-xs text-stone-500">{STEPS[step].subtitle}</p>
-
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {step === 0 && (
-                    <>
-                      <SelectInput
-                        field="manufacturer"
-                        value={form.manufacturer}
-                        options={[...Object.keys(modelsByManufacturer)].sort((a, b) => a.localeCompare(b))}
-                        onChange={updateField}
-                        error={errors.manufacturer}
-                      />
-                      <SelectInput
-                        field="model"
-                        value={form.model}
-                        options={sortedModelOptions}
-                        onChange={updateField}
-                        error={errors.model}
-                        disabled={!form.manufacturer}
-                        placeholder={form.manufacturer ? "Select model" : "Select manufacturer first"}
-                      />
-                      <NumberInput field="year" value={form.year} onChange={updateField} error={errors.year} min={1900} max={2026} placeholder="e.g. 2018" />
-                      <NumberInput field="odometer" value={form.odometer} onChange={updateField} error={errors.odometer} min={0} placeholder="e.g. 65000" />
-                    </>
-                  )}
-
-                  {step === 1 && (
-                    <>
-                      {(
-                        [
-                          "condition",
-                          "cylinders",
-                          "fuel",
-                          "transmission",
-                          "drive",
-                          "type",
-                          "title_status",
-                          "paint_color",
-                        ] as FieldName[]
-                      ).map((field) => (
+                <form onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    {step === 0 && (
+                      <>
                         <SelectInput
-                          key={field}
-                          field={field}
-                          value={form[field]}
-                          options={[...(selectOptions as Record<string, string[]>)[field]].sort(
-                            (a: string, b: string) => a.localeCompare(b)
-                          )}
+                          field="manufacturer"
+                          value={form.manufacturer}
+                          options={[...Object.keys(modelsByManufacturer)].sort((a, b) => a.localeCompare(b))}
                           onChange={updateField}
-                          error={errors[field]}
+                          error={errors.manufacturer}
                         />
-                      ))}
-                    </>
-                  )}
+                        <SelectInput
+                          field="model"
+                          value={form.model}
+                          options={sortedModelOptions}
+                          onChange={updateField}
+                          error={errors.model}
+                          disabled={!form.manufacturer}
+                          placeholder={form.manufacturer ? "Select model" : "Select manufacturer first"}
+                        />
+                        <NumberInput field="year" value={form.year} onChange={updateField} error={errors.year} min={1900} max={2026} placeholder="e.g. 2018" />
+                        <NumberInput field="odometer" value={form.odometer} onChange={updateField} error={errors.odometer} min={0} placeholder="e.g. 65000" />
+                      </>
+                    )}
 
-                  {step === 2 && (
-                    <>
-                      <SelectInput
-                        field="region"
-                        value={form.region}
-                        options={[...selectOptions.region].sort((a: string, b: string) => a.localeCompare(b))}
-                        onChange={updateField}
-                        error={errors.region}
-                      />
-                      <SelectInput
-                        field="state"
-                        value={form.state}
-                        options={[...selectOptions.state].sort((a: string, b: string) => a.localeCompare(b))}
-                        onChange={updateField}
-                        error={errors.state}
-                      />
-                    </>
-                  )}
-                </div>
+                    {step === 1 && (
+                      <>
+                        {(
+                          [
+                            "condition",
+                            "cylinders",
+                            "fuel",
+                            "transmission",
+                            "drive",
+                            "type",
+                            "title_status",
+                            "paint_color",
+                          ] as FieldName[]
+                        ).map((field) => (
+                          <SelectInput
+                            key={field}
+                            field={field}
+                            value={form[field]}
+                            options={[...(selectOptions as Record<string, string[]>)[field]].sort(
+                              (a: string, b: string) => a.localeCompare(b)
+                            )}
+                            onChange={updateField}
+                            error={errors[field]}
+                          />
+                        ))}
+                      </>
+                    )}
 
-                <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-                  <button
-                    type="button"
-                    onClick={goBack}
-                    disabled={step === 0}
-                    className="w-full rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-semibold text-stone-700
-                               transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-                  >
-                    Back
-                  </button>
+                    {step === 2 && (
+                      <>
+                        <SelectInput
+                          field="region"
+                          value={form.region}
+                          options={[...selectOptions.region].sort((a: string, b: string) => a.localeCompare(b))}
+                          onChange={updateField}
+                          error={errors.region}
+                        />
+                        <SelectInput
+                          field="state"
+                          value={form.state}
+                          options={[...selectOptions.state].sort((a: string, b: string) => a.localeCompare(b))}
+                          onChange={updateField}
+                          error={errors.state}
+                        />
+                      </>
+                    )}
+                  </div>
 
-                  {step < STEPS.length - 1 ? (
+                  <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between pt-4 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={goNext}
-                      className="w-full rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-dark sm:w-auto"
+                      onClick={goBack}
+                      disabled={step === 0}
+                      className="w-full rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700
+                                 transition-all hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                     >
-                      Next
+                      Back
                     </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition
-                                 hover:bg-accent-dark disabled:cursor-not-allowed disabled:bg-stone-300 sm:w-auto"
-                    >
-                      {loading ? "Calculating..." : "Estimate Price"}
-                    </button>
-                  )}
-                </div>
 
-                {apiError && (
-                  <div className="mt-4 rounded-lg border border-negative/20 bg-negative/5 px-4 py-3 text-sm text-negative">
-                    {apiError}
+                    {step < STEPS.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={goNext}
+                        className="w-full rounded-xl bg-accent px-8 py-3 text-sm font-semibold text-white shadow-md shadow-accent/20 
+                                   transition-all hover:bg-accent-dark active:scale-95 sm:w-auto"
+                      >
+                        Next Step
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full rounded-xl bg-accent px-8 py-3 text-sm font-semibold text-white shadow-md shadow-accent/20 
+                                   transition-all hover:bg-accent-dark active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
+                      >
+                        {loading ? (
+                          <span className="flex items-center gap-2">
+                            <svg className="h-4 w-4 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Calculating...
+                          </span>
+                        ) : (
+                          "Estimate Price"
+                        )}
+                      </button>
+                    )}
                   </div>
-                )}
-              </form>
-            </div>
-          </section>
 
-          {/* RESULT */}
-          <section className="lg:col-span-2">
-            <div className="lg:sticky lg:top-8 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-7">
-              <h2 className="mb-5 text-sm font-semibold text-stone-900">Valuation Result</h2>
-
-              {!result && !loading && (
-                <div className="flex h-56 flex-col items-center justify-center rounded-xl border border-dashed border-stone-200 px-4 text-center">
-                  <p className="text-sm text-stone-400">
-                    Complete the form and click &quot;Estimate Price&quot; to see your valuation here
-                  </p>
-                </div>
-              )}
-
-              {loading && (
-                <div className="flex h-56 items-center justify-center">
-                  <p className="text-sm text-stone-400">Calculating...</p>
-                </div>
-              )}
-
-              {result && !loading && (
-                <div className="space-y-6">
-                  {result.lowConfidence && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                      This vehicle combination is rare in our training data, so this estimate is less reliable than usual.
+                  {apiError && (
+                    <div className="mt-5 rounded-xl border border-negative/20 bg-negative/5 px-5 py-4 text-sm text-negative">
+                      {apiError}
                     </div>
                   )}
+                </form>
+              </div>
+            </section>
 
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-stone-400">Estimated Price</p>
-                    <p className="mt-1 text-4xl font-extrabold text-positive">{currency(result.price)}</p>
-                    <p className="mt-1 text-xs text-stone-500">
-                      Estimated range: {currency(result.low)} &ndash; {currency(result.high)}
+            {/* RESULT SECTION */}
+            <section className="xl:col-span-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8 xl:sticky xl:top-10">
+                <h2 className="mb-6 text-lg font-bold text-slate-900">Valuation Result</h2>
+
+                {!result && !loading && (
+                  <div className="flex h-64 flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 px-6 text-center">
+                    <div className="mb-3 rounded-full bg-slate-100 p-3">
+                      <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium text-slate-500">
+                      Complete the form and click "Estimate Price" to reveal your valuation.
                     </p>
                   </div>
+                )}
 
-                  <div>
-                    <p className="mb-3 text-xs font-medium uppercase tracking-wider text-stone-400">Factors influencing this price</p>
-                    <ul className="space-y-2.5">
-                      {result.factors.map((f) => {
-                        const positive = f.impact > 0;
-                        const negative = f.impact < 0;
-                        return (
-                          <li key={f.label} className="flex items-center justify-between gap-3 rounded-lg bg-stone-50 px-3 py-2">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <span
-                                className={`h-2 w-2 shrink-0 rounded-full ${
-                                  positive ? "bg-positive" : negative ? "bg-negative" : "bg-stone-300"
-                                }`}
-                              />
-                              <span className="truncate text-xs text-stone-600">{f.label}</span>
-                            </div>
-                            <span
-                              className={`shrink-0 text-xs font-semibold ${
-                                positive ? "text-positive" : negative ? "text-negative" : "text-stone-400"
-                              }`}
-                            >
-                              {f.impact === 0 ? "—" : `${positive ? "+" : ""}${currency(f.impact)}`}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                {loading && (
+                  <div className="flex h-64 flex-col items-center justify-center rounded-xl bg-slate-50">
+                    <svg className="mb-3 h-8 w-8 animate-spin text-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-sm font-medium text-slate-500">Analyzing market data...</p>
                   </div>
+                )}
 
-                  <p className="border-t border-stone-100 pt-4 text-[11px] leading-relaxed text-stone-400">
-                    Estimate generated by an XGBoost model trained on real listing data. The range and factors
-                    are illustrative approximations, not a guaranteed sale price.
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
+                {result && !loading && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+                    {result.lowConfidence && (
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">
+                        ⚠️ This vehicle combination is rare in our training data, so this estimate is less reliable than usual.
+                      </div>
+                    )}
+
+                    <div className="rounded-xl bg-slate-50 p-5 text-center">
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Estimated Price</p>
+                      <p className="mt-2 text-4xl font-extrabold text-accent">{currency(result.price)}</p>
+                      <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm border border-slate-100">
+                        <span>Range:</span>
+                        <span className="text-slate-900">{currency(result.low)} - {currency(result.high)}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">Key Price Factors</p>
+                      <ul className="space-y-3">
+                        {result.factors.map((f, idx) => {
+                          const positive = f.impact > 0;
+                          const negative = f.impact < 0;
+                          return (
+                            <li key={`${f.label}-${idx}`} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+                              <div className="flex min-w-0 items-center gap-3">
+                                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                                  positive ? "bg-positive/10 text-positive" : negative ? "bg-negative/10 text-negative" : "bg-slate-100 text-slate-500"
+                                }`}>
+                                  {positive ? '↑' : negative ? '↓' : '-'}
+                                </div>
+                                <span className="truncate text-sm font-medium text-slate-700">{f.label}</span>
+                              </div>
+                              <span className={`shrink-0 text-sm font-bold ${
+                                positive ? "text-positive" : negative ? "text-negative" : "text-slate-400"
+                              }`}>
+                                {f.impact === 0 ? "—" : `${positive ? "+" : ""}${currency(f.impact)}`}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+
+                    <p className="border-t border-slate-100 pt-5 text-center text-[11px] leading-relaxed text-slate-400">
+                      Estimate generated by an XGBoost model trained on real listing data. The range and factors
+                      are illustrative approximations, not a guaranteed sale price.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </main>
