@@ -248,43 +248,54 @@ export default function CarPricePredictor() {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!validateStep(step)) return;
+async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault();
+  if (!validateStep(step)) return;
 
-    setLoading(true);
-    setApiError(null);
-    setResult(null);
+  setLoading(true);
+  setApiError(null);
+  setResult(null);
 
-    const payload = { ...form, year: Number(form.year), odometer: Number(form.odometer) };
+  const year = Number(form.year);
+  const odometer = Number(form.odometer);
+  const currentYear = new Date().getFullYear();
+  const carAge = Math.max(currentYear - year, 0.5); // avoid div-by-zero for current-year cars
+  const milesPerYear = Math.round(odometer / carAge);
 
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+  const payload = {
+    ...form,
+    year,
+    odometer,
+    car_age: carAge,
+    miles_per_year: milesPerYear,
+  };
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? "There was a problem connecting to the model. Please check your inputs.");
-      }
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-      const data = await res.json();
-      const price = data.estimated_price ?? data.predicted_price;
-      const low = data.confidence_low ?? price * 0.92;
-      const high = data.confidence_high ?? price * 1.08;
-      const factors: Factor[] = data.factors && data.factors.length ? data.factors : mockFactors(form, price);
-      const lowConfidence = Boolean(data.low_confidence);
-
-      setResult({ price, low, high, factors, lowConfidence });
-    } catch (err) {
-      setApiError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setLoading(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail ?? "There was a problem connecting to the model. Please check your inputs.");
     }
-  }
 
+    const data = await res.json();
+    const price = data.estimated_price ?? data.predicted_price;
+    const low = data.confidence_low ?? price * 0.92;
+    const high = data.confidence_high ?? price * 1.08;
+    const factors: Factor[] = data.factors && data.factors.length ? data.factors : mockFactors(form, price);
+    const lowConfidence = Boolean(data.low_confidence);
+
+    setResult({ price, low, high, factors, lowConfidence });
+  } catch (err) {
+    setApiError(err instanceof Error ? err.message : "Something went wrong.");
+  } finally {
+    setLoading(false);
+  }
+}
   const progressPct = ((step + 1) / STEPS.length) * 100;
 
   return (
