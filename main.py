@@ -4,7 +4,6 @@ import joblib
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -22,6 +21,12 @@ ENCODING_MAPS_PATH = os.path.join(BASE_DIR, "encoding_maps.pkl")
 # engineered columns — it was fit on a training dataframe that included
 # them. Without them, pipeline.transform() raises
 # "columns are missing: {'miles_per_year', 'car_age'}".
+# Must match the notebook exactly (Datapre_modeling.ipynb, feature-engineering
+# cell): CURRENT_YEAR = 2026 is a fixed reference year baked into the fitted
+# preprocessing_pipeline.pkl — it is intentionally NOT datetime.now().year.
+# Re-train and update this constant when the model is retrained.
+CURRENT_YEAR = 2026
+
 NUM_COLS = ["year", "cylinders", "odometer", "car_age", "miles_per_year"]
 ORDINAL_COLS = ["condition"]
 CATEG_COLS = ["fuel", "title_status", "transmission", "drive", "type", "paint_color"]
@@ -143,18 +148,24 @@ def extract_cylinders(raw: str) -> float:
 
 
 def compute_car_age(year: int) -> float:
-    """Age in years relative to the current calendar year. Floored at 0.5
-    to avoid a divide-by-zero when computing miles_per_year for
-    current-year vehicles.
-
-    IMPORTANT: this must match whatever formula was used when the
-    preprocessing_pipeline.pkl / model were trained (e.g. if the notebook
-    used a fixed reference year instead of "now", or a different floor,
-    update this function to match exactly — otherwise predictions will be
-    computed on features the model was not trained to expect).
+    """Matches Datapre_modeling.ipynb exactly:
+        car_age = (CURRENT_YEAR - year).clip(lower=0)
+    i.e. relative to the fixed CURRENT_YEAR the model was trained with,
+    floored at 0 (not clamped away from 0 — see compute_miles_per_year for
+    how the divide-by-zero case is handled, which also matches the
+    notebook's `.replace(0, 1)`).
     """
-    current_year = datetime.now().year
-    return max(current_year - year, 0.5)
+    return max(float(CURRENT_YEAR - year), 0.0)
+
+
+def compute_miles_per_year(odometer: float, car_age: float) -> float:
+    """Matches Datapre_modeling.ipynb exactly:
+        miles_per_year = odometer / car_age.replace(0, 1)
+    i.e. a car_age of 0 (current-model-year vehicle) is treated as a
+    divisor of 1, not 0.5 or any other value.
+    """
+    divisor = car_age if car_age != 0 else 1.0
+    return odometer / divisor
 
 
 def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
@@ -168,7 +179,7 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
     They are intentionally not used below.
     """
     car_age = compute_car_age(car.year)
-    miles_per_year = car.odometer / car_age
+    miles_per_year = compute_miles_per_year(car.odometer, car_age)
 
     row = {
         "year": float(car.year),
@@ -219,7 +230,7 @@ def mock_factors(car: CarFeatures, price: float) -> list[PredictionFactor]:
     elif car.odometer < 40000:
         factors.append(PredictionFactor(label="Low odometer reading", impact=round(price * 0.08, -1)))
 
-    age = compute_car_age(car.year)
+    age = CURRENT_YEAR - car.year  # unclamped, for display purposes only
     if age > 12:
         factors.append(PredictionFactor(label="Older model year", impact=-round(price * 0.09, -1)))
     elif age < 4:
