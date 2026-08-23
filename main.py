@@ -16,15 +16,7 @@ MODEL_PATH = os.path.join(BASE_DIR, "XGBR.json")
 PIPELINE_PATH = os.path.join(BASE_DIR, "preprocessing_pipeline.pkl")
 ENCODING_MAPS_PATH = os.path.join(BASE_DIR, "encoding_maps.pkl")
 
-# NOTE: car_age and miles_per_year were added here because the fitted
-# preprocessing_pipeline.pkl (ColumnTransformer) expects these two
-# engineered columns — it was fit on a training dataframe that included
-# them. Without them, pipeline.transform() raises
-# "columns are missing: {'miles_per_year', 'car_age'}".
-# Must match the notebook exactly (Datapre_modeling.ipynb, feature-engineering
-# cell): CURRENT_YEAR = 2026 is a fixed reference year baked into the fitted
-# preprocessing_pipeline.pkl — it is intentionally NOT datetime.now().year.
-# Re-train and update this constant when the model is retrained.
+
 CURRENT_YEAR = 2026
 
 NUM_COLS = ["year", "cylinders", "odometer", "car_age", "miles_per_year"]
