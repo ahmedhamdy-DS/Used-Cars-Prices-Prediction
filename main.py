@@ -1,11 +1,10 @@
-
-
 import os
 import re
 import joblib
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -18,7 +17,12 @@ MODEL_PATH = os.path.join(BASE_DIR, "XGBR.json")
 PIPELINE_PATH = os.path.join(BASE_DIR, "preprocessing_pipeline.pkl")
 ENCODING_MAPS_PATH = os.path.join(BASE_DIR, "encoding_maps.pkl")
 
-NUM_COLS = ["year", "cylinders", "odometer"]
+# NOTE: car_age and miles_per_year were added here because the fitted
+# preprocessing_pipeline.pkl (ColumnTransformer) expects these two
+# engineered columns — it was fit on a training dataframe that included
+# them. Without them, pipeline.transform() raises
+# "columns are missing: {'miles_per_year', 'car_age'}".
+NUM_COLS = ["year", "cylinders", "odometer", "car_age", "miles_per_year"]
 ORDINAL_COLS = ["condition"]
 CATEG_COLS = ["fuel", "title_status", "transmission", "drive", "type", "paint_color"]
 PASSTHROUGH_COLS = ["condition_missing", "region", "model"]
@@ -138,6 +142,21 @@ def extract_cylinders(raw: str) -> float:
     return CYLINDERS_FALLBACK
 
 
+def compute_car_age(year: int) -> float:
+    """Age in years relative to the current calendar year. Floored at 0.5
+    to avoid a divide-by-zero when computing miles_per_year for
+    current-year vehicles.
+
+    IMPORTANT: this must match whatever formula was used when the
+    preprocessing_pipeline.pkl / model were trained (e.g. if the notebook
+    used a fixed reference year instead of "now", or a different floor,
+    update this function to match exactly — otherwise predictions will be
+    computed on features the model was not trained to expect).
+    """
+    current_year = datetime.now().year
+    return max(current_year - year, 0.5)
+
+
 def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
     """Builds a single-row DataFrame with exactly the columns/dtypes/order
     the ColumnTransformer was fit on.
@@ -148,10 +167,15 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
     notebook's `cols_order` for the ColumnTransformer never included them.
     They are intentionally not used below.
     """
+    car_age = compute_car_age(car.year)
+    miles_per_year = car.odometer / car_age
+
     row = {
         "year": float(car.year),
         "cylinders": extract_cylinders(car.cylinders),
         "odometer": float(car.odometer),
+        "car_age": car_age,
+        "miles_per_year": miles_per_year,
         "condition": car.condition,
         "fuel": car.fuel,
         "title_status": car.title_status,
@@ -168,8 +192,10 @@ def build_feature_dataframe(car: CarFeatures) -> pd.DataFrame:
 
     df = pd.DataFrame([row])
 
-
-    numeric_cols = ["year", "cylinders", "odometer", "condition_missing", "region", "model"]
+    numeric_cols = [
+        "year", "cylinders", "odometer", "car_age", "miles_per_year",
+        "condition_missing", "region", "model",
+    ]
     df[numeric_cols] = df[numeric_cols].astype(float)
 
     string_cols = ["condition", "fuel", "title_status", "transmission", "drive", "type", "paint_color"]
@@ -193,7 +219,7 @@ def mock_factors(car: CarFeatures, price: float) -> list[PredictionFactor]:
     elif car.odometer < 40000:
         factors.append(PredictionFactor(label="Low odometer reading", impact=round(price * 0.08, -1)))
 
-    age = 2026 - car.year
+    age = compute_car_age(car.year)
     if age > 12:
         factors.append(PredictionFactor(label="Older model year", impact=-round(price * 0.09, -1)))
     elif age < 4:
