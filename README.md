@@ -80,12 +80,12 @@ sequenceDiagram
     U->>F: Fill in vehicle details (3-step form)
     F->>A: POST /predict {region, year, model, condition, ...}
     A->>A: Validate payload (Pydantic schema)
-    A->>A: Encode region/model via target-encoding maps
+    A->>A: Derive car_age & miles_per_year, encode region/model via target-encoding maps
     A->>P: transform(features_df)
     P-->>A: Transformed feature matrix
     A->>M: predict(transformed)
     M-->>A: Raw predicted price
-    A->>A: Clamp to >= 0, build confidence range & factors
+    A->>A: Clamp to price bounds, build confidence range & factors
     A-->>F: {estimated_price, confidence_low/high, factors}
     F-->>U: Render valuation result
 ```
@@ -95,7 +95,7 @@ sequenceDiagram
 ```mermaid
 flowchart TD
     subgraph Input Features
-        N["Numeric: year, cylinders, odometer"]
+        N["Numeric: year, cylinders, odometer, car_age, miles_per_year"]
         O["Ordinal: condition"]
         C["Categorical: fuel, title_status, transmission, drive, type, paint_color"]
         T["Target-Encoded: region, model"]
@@ -114,6 +114,58 @@ flowchart TD
     CT --> XGB["XGBoost Regressor"]
     XGB --> OUT["Predicted Price"]
 ```
+
+---
+
+## Modeling Results
+
+Full pipeline and experiments are in [`Datapre_modeling.ipynb`](./Datapre_modeling.ipynb).
+
+### Dataset
+
+| Stage | Rows | Notes |
+|---|---|---|
+| Raw Craigslist dataset | 426,880 | `vehicles.csv` |
+| After dropping rows with no `price` / full & near-duplicates | — | Irrelevant columns dropped: `county`, `size`, `VIN`, `lat`, `long`, `image_url`, `description`, `region_url`, `url`, `id`, `posting_date` |
+| Train / Test split (70/30, `random_state=42`) | 255,871 / 109,660 | Before outlier removal |
+| After outlier & data-quality filtering | **202,587** train / **87,007** test | Final rows used to fit/evaluate the model |
+
+**Cleaning steps applied:**
+- Dropped rows missing `year`, `fuel`, `odometer`, `transmission`, or `title_status`.
+- Imputed `cylinders`, `drive`, and `type` using the mode within each `(manufacturer, model)` group, falling back to the global mode.
+- Flagged missing `condition` with a `condition_missing` indicator column, then imputed with the training-set mode.
+- Removed price/odometer outliers via IQR bounds, plus hard filters: price in `[500, 150000]`, odometer `< 400,000`, model year `>= 1995`.
+- Removed ~likely scam/mispriced listings (very low price on a newer, low-mileage car).
+
+### Feature engineering
+
+- **`car_age`** = `(2026 - year)`, floored at 0
+- **`miles_per_year`** = `odometer / car_age` (car_age of 0 treated as 1 to avoid divide-by-zero)
+- **`region`** and **`model`** — high-cardinality categoricals (thousands of distinct values) encoded via **K-fold smoothed target encoding** (`smoothing=10`) to avoid leakage, with unseen categories at inference time falling back to the global mean price.
+- **`condition`** — ordinal-encoded with an explicit domain ordering: `salvage < fair < good < excellent < like new < new`.
+- **`fuel`, `title_status`, `transmission`, `drive`, `type`, `paint_color`** — one-hot encoded (`drop='first'`).
+- **`year`, `cylinders`, `odometer`, `car_age`, `miles_per_year`** — scaled with `RobustScaler` (robust to the remaining outliers in price-driving numeric features).
+
+### Model comparison
+
+Two gradient-boosted tree models were trained and evaluated on the held-out test set (87,007 rows):
+
+| Model | R² | MAE | RMSE |
+|---|---|---|---|
+| **XGBoost** ✅ (selected) | **0.9051** | **$2,574** | **$3,915** |
+| LightGBM | 0.8954 | $2,761 | $4,108 |
+
+**XGBoost** (`n_estimators=300`, `random_state=42`) was selected as the production model — it edged out LightGBM on all three metrics. Learning curves (train vs. cross-validation R²) confirmed the model wasn't meaningfully overfitting at this training-set size, and residual plots (actual vs. predicted, residual distribution, residuals vs. predicted) showed errors centered near zero with no strong systematic bias, aside from a long tail on very high-value / rare listings.
+
+**In practical terms:** the model explains ~90.5% of the variance in used-car prices, with a typical prediction error (MAE) of about **$2,574** on cars priced up to $150,000.
+
+### Artifacts produced
+
+| File | Purpose |
+|---|---|
+| `XGBR.json` | Trained XGBoost model, saved in native format (not pickled) for cross-version compatibility |
+| `preprocessing_pipeline.pkl` | Fitted `ColumnTransformer` (scaling + encoding), used identically at inference time |
+| `encoding_maps.pkl` | Target-encoding lookup tables for `region`/`model`, plus global mean price and cylinder fallback |
 
 ---
 
@@ -241,7 +293,8 @@ ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.vercel.app
 
 ## Technical Notes
 
-- **Target encoding**: `region` and `model` are high-cardinality categorical fields (thousands of distinct values), so they are encoded using precomputed mean-target lookup tables (`encoding_maps.pkl`) rather than one-hot encoding, keeping the feature space compact. Unseen categories at inference time fall back to the global mean price.
+- **Target encoding**: `region` and `model` are high-cardinality categorical fields (thousands of distinct values), so they are encoded using precomputed, K-fold smoothed mean-target lookup tables (`encoding_maps.pkl`) rather than one-hot encoding, keeping the feature space compact. Unseen categories at inference time fall back to the global mean price.
+- **Derived features**: `car_age` and `miles_per_year` are computed server-side from `year` and `odometer` on every request, using the exact same formula as training (`CURRENT_YEAR = 2026` fixed reference point) — this constant should be revisited on model retraining.
 - **Column order**: the FastAPI service reconstructs the exact column order the `ColumnTransformer` was fit with (`NUM_COLS + ORDINAL_COLS + CATEG_COLS + PASSTHROUGH_COLS`) before calling `.transform()`, since scikit-learn pipelines are order-sensitive.
 - **Model format**: the XGBoost model is persisted in its native `.json` format (`XGBR.json`) rather than pickled, for better long-term compatibility across XGBoost versions.
 - **Version pinning**: `requirements.txt` pins `scikit-learn`, `xgboost`, and `numpy` to the exact versions used during training to avoid `InconsistentVersionWarning` issues and silently degraded predictions when unpickling the preprocessing pipeline.
@@ -254,7 +307,7 @@ ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend-domain.vercel.app
 **Ahmed Hamdy**
 
 - LinkedIn: [linkedin.com/in/My-profile](https://www.linkedin.com/in/ahmed-hamdy-4569a8360/)
-- Portfolio: [my-web-3ciq.vercel.app](https://my-web-3ciq.vercel.app/)
+- Portfolio: [my-web-3ciq.vercel.app](https://web-virid-sigma-xl71x74kef.vercel.app/)
 - GitHub: [@ahmedhamdy-DS](https://github.com/ahmedhamdy-DS)
 
 ---
